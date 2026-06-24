@@ -7,6 +7,7 @@ import { Dashboard } from './pages/Dashboard';
 import { Clientes } from './pages/Clientes';
 import { DetalleCliente } from './pages/DetalleCliente';
 import { useAuth } from './context/AuthContext';
+import { Inventario } from './pages/Inventario';
 
 function App() {
   const { usuario, cargando } = useAuth();
@@ -18,6 +19,7 @@ function App() {
   return (
     <Router>
       <Routes>
+        <Route path="/inventario" element={usuario ? <Inventario /> : <Navigate to="/login" />} />
         {/* Rutas Públicas */}
         <Route path="/login" element={!usuario ? <Login /> : <Navigate to="/dashboard" />} />
         
