@@ -8,6 +8,7 @@ import { Clientes } from './pages/Clientes';
 import { DetalleCliente } from './pages/DetalleCliente';
 import { useAuth } from './context/AuthContext';
 import { Inventario } from './pages/Inventario';
+import { Citas } from './pages/Citas';
 
 function App() {
   const { usuario, cargando } = useAuth();
@@ -19,7 +20,7 @@ function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/inventario" element={usuario ? <Inventario /> : <Navigate to="/login" />} />
+        
         {/* Rutas Públicas */}
         <Route path="/login" element={!usuario ? <Login /> : <Navigate to="/dashboard" />} />
         
@@ -32,6 +33,10 @@ function App() {
 
         {/* Ruta comodín */}
         <Route path="*" element={<Navigate to="/login" />} />
+
+        <Route path="/inventario" element={usuario ? <Inventario /> : <Navigate to="/login" />} />
+
+        <Route path="/citas" element={usuario ? <Citas /> : <Navigate to="/login" />} />
       </Routes>
     </Router>
   );
