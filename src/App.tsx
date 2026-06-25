@@ -5,7 +5,7 @@ import { Clientes } from './pages/Clientes';
 import { DetalleCliente } from './pages/DetalleCliente';
 import { useAuth } from './context/AuthContext';
 import { Citas } from './pages/Citas';
-import { Servicios } from './pages/Servicios'; // Importación limpia con llaves
+import { Servicios } from './pages/Servicios';
 
 function App() {
   const { usuario, cargando } = useAuth();
@@ -35,24 +35,6 @@ function App() {
         <Route path="/clientes" element={usuario ? <Clientes /> : <Navigate to="/login" />} />
         <Route path="/clientes/:id" element={usuario ? <DetalleCliente /> : <Navigate to="/login" />} />
         <Route path="/citas" element={usuario ? <Citas /> : <Navigate to="/login" />} />
-        <Route path="/servicios" element={usuario ? <Servicios /> : <Navigate to="/login" />} />
-
-        <Route path="*" element={<Navigate to="/login" />} />
-      </Routes>
-    </Router>
-  );
-}
-
-export default App;        <Route path="/citas" element={usuario ? <Citas /> : <Navigate to="/login" />} />
-        <Route path="/servicios" element={usuario ? <Servicios /> : <Navigate to="/login" />} />
-
-        <Route path="*" element={<Navigate to="/login" />} />
-      </Routes>
-    </Router>
-  );
-}
-
-export default App;        <Route path="/citas" element={usuario ? <Citas /> : <Navigate to="/login" />} />
         <Route path="/servicios" element={usuario ? <Servicios /> : <Navigate to="/login" />} />
 
         <Route path="*" element={<Navigate to="/login" />} />
