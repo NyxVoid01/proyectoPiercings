@@ -8,23 +8,27 @@ interface ServicioItem {
   id: string;
   tipoServicio: string;
   zona: string;
-  precio: number; // $
-  accesorio: string; // Tipo de joya asociada
-  descuento: number; // Descuento aplicable en pesos o porcentaje
-  stockInsumo: number; // Cantidad disponible en vitrina (Punto 4 de requerimientos)
+  precio: number;
+  accesorio: string;
+  descuento: number;
+  stockInsumo: number;
 }
 
 export const Inventario: React.FC = () => {
   const { usuario } = useAuth();
   const [servicios, setServicios] = useState<ServicioItem[]>([]);
 
-  // Campos para el formulario del CRUD
+  // Campos CRUD
   const [tipoServicio, setTipoServicio] = useState('');
   const [zona, setZona] = useState('');
   const [precio, setPrecio] = useState('');
   const [accesorio, setAccesorio] = useState('');
   const [descuento, setDescuento] = useState('0');
   const [stockInsumo, setStockInsumo] = useState('');
+
+  // DETECCIÓN DE PERMISOS DE ADMINISTRADOR
+  const nombreMinuscula = usuario?.nombre?.toLowerCase() || '';
+  const esAdmin = nombreMinuscula === 'fernando' || nombreMinuscula === 'angel';
 
   useEffect(() => {
     const guardados = localStorage.getItem('ink_needle_servicios_crud');
@@ -34,7 +38,7 @@ export const Inventario: React.FC = () => {
       const iniciales: ServicioItem[] = [
         { id: '1', tipoServicio: 'Perforación Helix', zona: 'Oreja (Cartílago)', precio: 25000, accesorio: 'Labret de Titanio', descuento: 0, stockInsumo: 45 },
         { id: '2', tipoServicio: 'Perforación Nostril', zona: 'Nariz', precio: 20000, accesorio: 'Argolla Nostril Oro', descuento: 2000, stockInsumo: 12 },
-        { id: '3', tipoServicio: 'Perforación Navel', zona: 'Ombligo', precio: 30000, accesorio: 'Banana con Cristal', descuento: 0, stockInsumo: 8 }
+        { id: '3', tipoServicio: 'Perforación Navel', zona: 'Ombligo', precio: 30000, accesorio: 'Banana con Cristal', descuento: 0, stockInsumo: 5 }
       ];
       setServicios(iniciales);
       localStorage.setItem('ink_needle_servicios_crud', JSON.stringify(iniciales));
@@ -43,10 +47,7 @@ export const Inventario: React.FC = () => {
 
   const handleCrearServicio = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!tipoServicio || !zona || !precio || !accesorio || !stockInsumo) {
-      alert('Por favor completa todos los campos del catálogo.');
-      return;
-    }
+    if (!tipoServicio || !zona || !precio || !accesorio || !stockInsumo) return;
 
     const nuevoItem: ServicioItem = {
       id: crypto.randomUUID(),
@@ -62,115 +63,115 @@ export const Inventario: React.FC = () => {
     setServicios(listaActualizada);
     localStorage.setItem('ink_needle_servicios_crud', JSON.stringify(listaActualizada));
 
-    // Limpiar formulario
     setTipoServicio('');
     setZona('');
     setPrecio('');
     setAccesorio('');
     setDescuento('0');
     setStockInsumo('');
-    alert('¡Servicio e Insumo registrado correctamente!');
   };
 
   const handleEliminarServicio = (id: string) => {
-    if (window.confirm('¿Seguro que deseas eliminar este servicio del catálogo?')) {
+    if (!esAdmin) {
+      alert('Acceso Denegado: Solo Fernando o Angel pueden dar de baja servicios del catálogo.');
+      return;
+    }
+    if (window.confirm('¿Deseas quitar este servicio del catálogo comercial?')) {
       const filtrados = servicios.filter(s => s.id !== id);
       setServicios(filtrados);
       localStorage.setItem('ink_needle_servicios_crud', JSON.stringify(filtrados));
     }
   };
 
+
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', fontFamily: 'sans-serif' }}>
-      {/* Menú Lateral */}
-      <div style={{ width: '250px', backgroundColor: '#1e1e2f', color: 'white', padding: '20px' }}>
-        <h3>Ink & Needle</h3>
-        <p style={{ fontSize: '13px', color: '#a0a0b0' }}>Usuario: {usuario?.nombre}</p>
-        <Link to="/dashboard" style={{ color: 'white', display: 'block', marginBottom: '10px', textDecoration: 'none' }}>🏠 Volver al Inicio</Link>
-        <Link to="/citas" style={{ color: '#d0d0d0', display: 'block', marginBottom: '10px', textDecoration: 'none' }}>📅 Ver Citas</Link>
-        <Link to="/clientes" style={{ color: '#d0d0d0', display: 'block', textDecoration: 'none' }}>👥 Fichas Clínicas</Link>
+    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#121214', color: '#e1e1e6', fontFamily: 'sans-serif' }}>
+      {/* SIDEBAR */}
+      <div style={{ width: '260px', backgroundColor: '#1a1a1e', borderRight: '1px solid #29292e', padding: '20px' }}>
+        <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#ffffff', textAlign: 'center', marginBottom: '40px' }}>
+          INK & <span style={{ color: '#e50914' }}>NEEDLE</span>
+        </div>
+        <nav style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <Link to="/dashboard" style={{ padding: '12px 15px', color: '#a8a8b3', textDecoration: 'none' }}>Panel Principal</Link>
+          <Link to="/citas" style={{ padding: '12px 15px', color: '#a8a8b3', textDecoration: 'none' }}>📅 Agenda de Citas</Link>
+          <Link to="/clientes" style={{ padding: '12px 15px', color: '#a8a8b3', textDecoration: 'none' }}>👥 Fichas Clínicas</Link>
+          <Link to="/inventario" style={{ padding: '12px 15px', color: '#fff', backgroundColor: '#29292e', textDecoration: 'none', borderRadius: '6px', borderLeft: '4px solid #e50914', fontWeight: 'bold' }}>📦 Catálogo e Inventario</Link>
+        </nav>
       </div>
 
-      {/* Contenido Principal */}
-      <main style={{ flex: 1, padding: '30px', backgroundColor: '#f4f6f9' }}>
-        <h2>📦 CRUD - Catálogo de Servicios e Insumos en Vitrina</h2>
+      {/* CONTENIDO */}
+      <main style={{ flex: 1, padding: '30px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+          <h2 style={{ color: '#fff' }}>📦 Control de Insumos y Servicios</h2>
+          <span style={{ 
+            fontSize: '12px', 
+            padding: '5px 12px', 
+            borderRadius: '12px', 
+            backgroundColor: esAdmin ? 'rgba(40, 167, 69, 0.2)' : 'rgba(229, 9, 20, 0.2)', 
+            color: esAdmin ? '#28a745' : '#e50914',
+            fontWeight: 'bold'
+          }}>
+            Rol: {esAdmin ? '⚡ Administrador' : '🔒 Staff'}
+          </span>
+        </div>
 
-        {/* Formulario de Alta */}
-        <div style={{ background: 'white', padding: '20px', borderRadius: '8px', marginBottom: '30px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-          <h3>Añadir Nuevo Servicio / Joya</h3>
+        {/* FORMULARIO */}
+        <div style={{ backgroundColor: '#1a1a1e', border: '1px solid #29292e', padding: '20px', borderRadius: '8px', marginBottom: '30px' }}>
+          <h3 style={{ marginBottom: '15px', color: '#fff' }}>Agregar Joya / Procedimiento</h3>
           <form onSubmit={handleCrearServicio} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '15px' }}>
-            <div>
-              <label>Tipo Servicio *</label>
-              <input type="text" value={tipoServicio} onChange={e => setTipoServicio(e.target.value)} style={{ width: '100%', padding: '8px', marginTop: '5px' }} placeholder="Ej: Perforación Septum" required />
-            </div>
-            <div>
-              <label>Zona Anatómica *</label>
-              <input type="text" value={zona} onChange={e => setZona(e.target.value)} style={{ width: '100%', padding: '8px', marginTop: '5px' }} placeholder="Ej: Nariz / Oreja" required />
-            </div>
-            <div>
-              <label>Precio ($) *</label>
-              <input type="number" value={precio} onChange={e => setPrecio(e.target.value)} style={{ width: '100%', padding: '8px', marginTop: '5px' }} placeholder="Precio base en $" required />
-            </div>
-            <div>
-              <label>Accesorio / Joyería Relacionada *</label>
-              <input type="text" value={accesorio} onChange={e => setAccesorio(e.target.value)} style={{ width: '100%', padding: '8px', marginTop: '5px' }} placeholder="Ej: Argolla Titanio G23" required />
-            </div>
-            <div>
-              <label>Descuento Aplicado ($)</label>
-              <input type="number" value={descuento} onChange={e => setDescuento(e.target.value)} style={{ width: '100%', padding: '8px', marginTop: '5px' }} />
-            </div>
-            <div>
-              <label>Cantidad Disponible en Vitrina *</label>
-              <input type="number" value={stockInsumo} onChange={e => setStockInsumo(e.target.value)} style={{ width: '100%', padding: '8px', marginTop: '5px' }} placeholder="Stock actual" required />
-            </div>
-            <div style={{ gridColumn: '1 / span 3' }}>
-              <button type="submit" style={{ width: '100%', padding: '10px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>
-                💾 Guardar en Catálogo de Tienda
-              </button>
-            </div>
+            <input type="text" placeholder="Procedimiento (Ej: Septum Piercing)" value={tipoServicio} onChange={e => setTipoServicio(e.target.value)} style={{ padding: '10px', backgroundColor: '#202024', border: '1px solid #29292e', color: '#fff', borderRadius: '4px' }} required />
+            <input type="text" placeholder="Ubicación Corporal" value={zona} onChange={e => setZona(e.target.value)} style={{ padding: '10px', backgroundColor: '#202024', border: '1px solid #29292e', color: '#fff', borderRadius: '4px' }} required />
+            <input type="number" placeholder="Precio ($)" value={precio} onChange={e => setPrecio(e.target.value)} style={{ padding: '10px', backgroundColor: '#202024', border: '1px solid #29292e', color: '#fff', borderRadius: '4px' }} required />
+            <input type="text" placeholder="Joya Asociada (Insumo)" value={accesorio} onChange={e => setAccesorio(e.target.value)} style={{ padding: '10px', backgroundColor: '#202024', border: '1px solid #29292e', color: '#fff', borderRadius: '4px' }} required />
+            <input type="number" placeholder="Descuento ($)" value={descuento} onChange={e => setDescuento(e.target.value)} style={{ padding: '10px', backgroundColor: '#202024', border: '1px solid #29292e', color: '#fff', borderRadius: '4px' }} />
+            <input type="number" placeholder="Stock Inicial Vitrina" value={stockInsumo} onChange={e => setStockInsumo(e.target.value)} style={{ padding: '10px', backgroundColor: '#202024', border: '1px solid #29292e', color: '#fff', borderRadius: '4px' }} required />
+            
+            <button type="submit" style={{ gridColumn: '1 / span 3', padding: '12px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>
+              💾 Registrar en Sistema
+            </button>
           </form>
         </div>
 
-        {/* Tabla CRUD */}
-        <div style={{ background: 'white', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-          <h3>Catálogo Activo</h3>
-          <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px' }}>
+        {/* TABLA */}
+        <div style={{ backgroundColor: '#1a1a1e', border: '1px solid #29292e', padding: '20px', borderRadius: '8px' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
             <thead>
-              <tr style={{ backgroundColor: '#eee', textAlign: 'left' }}>
-                <th style={{ padding: '10px' }}>Tipo Servicio</th>
-                <th style={{ padding: '10px' }}>Zona</th>
-                <th style={{ padding: '10px' }}>Precio Base ($)</th>
-                <th style={{ padding: '10px' }}>Accesorio (Joya)</th>
-                <th style={{ padding: '10px' }}>Descuento</th>
-                <th style={{ padding: '10px' }}>Stock Vitrina</th>
-                <th style={{ padding: '10px' }}>Acciones</th>
+              <tr style={{ borderBottom: '1px solid #29292e' }}>
+                <th style={{ color: '#7c7c8a', paddingBottom: '10px' }}>Servicio</th>
+                <th style={{ color: '#7c7c8a', paddingBottom: '10px' }}>Ubicación</th>
+                <th style={{ color: '#7c7c8a', paddingBottom: '10px' }}>Precio Base</th>
+                <th style={{ color: '#7c7c8a', paddingBottom: '10px' }}>Joya Insumo</th>
+                <th style={{ color: '#7c7c8a', paddingBottom: '10px' }}>Vitrina</th>
+                <th style={{ color: '#7c7c8a', paddingBottom: '10px' }}>Acciones</th>
               </tr>
             </thead>
             <tbody>
               {servicios.map(s => (
-                <tr key={s.id} style={{ borderBottom: '1px solid #ddd' }}>
-                  <td style={{ padding: '10px', fontWeight: 'bold' }}>{s.tipoServicio}</td>
-                  <td style={{ padding: '10px' }}>{s.zona}</td>
-                  <td style={{ padding: '10px' }}>${s.precio.toLocaleString('es-CL')}</td>
-                  <td style={{ padding: '10px' }}>{s.accesorio}</td>
-                  <td style={{ padding: '10px', color: s.descuento > 0 ? '#28a745' : 'inherit' }}>
-                    {s.descuento > 0 ? `-$${s.descuento.toLocaleString('es-CL')}` : 'Sin desc.'}
-                  </td>
-                  <td style={{ padding: '10px' }}>
+                <tr key={s.id} style={{ borderBottom: '1px solid #202024' }}>
+                  <td style={{ padding: '12px 0', color: '#fff', fontWeight: 'bold' }}>{s.tipoServicio}</td>
+                  <td style={{ padding: '12px 0', color: '#c4c4cc' }}>{s.zona}</td>
+                  <td style={{ padding: '12px 0', color: '#fff' }}>${s.precio.toLocaleString('es-CL')}</td>
+                  <td style={{ padding: '12px 0', color: '#c4c4cc' }}>{s.accesorio}</td>
+                  <td style={{ padding: '12px 0' }}>
                     <span style={{ 
-                      fontWeight: 'bold', 
-                      color: s.stockInsumo <= 15 ? '#dc3545' : '#28a745',
-                      backgroundColor: s.stockInsumo <= 15 ? '#f8d7da' : '#d4edda',
-                      padding: '3px 8px',
-                      borderRadius: '4px'
+                      fontWeight: 'bold',
+                      color: s.stockInsumo <= 15 ? '#feb700' : '#28a745',
+                      backgroundColor: s.stockInsumo <= 15 ? 'rgba(254,183,0,0.1)' : 'rgba(40,167,69,0.1)',
+                      padding: '4px 8px',
+                      borderRadius: '4px',
+                      fontSize: '13px'
                     }}>
-                      {s.stockInsumo} uds {s.stockInsumo <= 15 && '⚠️ (Stock Bajo)'}
+                      {s.stockInsumo} uds {s.stockInsumo <= 15 && '⚠️'}
                     </span>
                   </td>
-                  <td style={{ padding: '10px' }}>
-                    <button onClick={() => handleEliminarServicio(s.id)} style={{ backgroundColor: '#dc3545', color: 'white', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer' }}>
-                      Eliminar
-                    </button>
+                  <td style={{ padding: '12px 0' }}>
+                    {esAdmin ? (
+                      <button onClick={() => handleEliminarServicio(s.id)} style={{ backgroundColor: 'transparent', color: '#e50914', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}>
+                        Eliminar
+                      </button>
+                    ) : (
+                      <span style={{ color: '#50505a', fontSize: '13px' }}>🔒 Solo Admin</span>
+                    )}
                   </td>
                 </tr>
               ))}
