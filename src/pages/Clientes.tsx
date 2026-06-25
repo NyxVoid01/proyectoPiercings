@@ -1,139 +1,172 @@
 
-
-// src/pages/Clientes.tsx
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
-import { type Cliente } from '../types/index';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+
+interface FichaCliente {
+  id: string;
+  nombre: string;
+  fechaNacimiento: string;
+  alergias: string;
+  numeroContacto: string;
+  correo: string;
+  consentimientoFirmado: boolean;
+}
 
 export const Clientes: React.FC = () => {
-  const { usuario } = useAuth(); // 👈 Ya no marcará error porque lo usaremos abajo
-  const [clientes, setClientes] = useState<Cliente[]>([]);
-  
-  // Estados para el formulario
-  const [nombre, setNombre] = useState('');
-  const [rut, setRut] = useState('');
-  const [telefono, setTelefono] = useState('');
-  const [zona, setZona] = useState('Septum');
-  const [alergias, setAlergias] = useState('');
+  const { usuario } = useAuth();
+  const [clientes, setClientes] = useState<FichaCliente[]>([]);
 
-  // Cargar clientes desde localStorage al iniciar
+  // Campos del formulario CRUD
+  const [nombre, setNombre] = useState('');
+  const [fechaNacimiento, setFechaNacimiento] = useState('');
+  const [alergias, setAlergias] = useState('');
+  const [numeroContacto, setNumeroContacto] = useState('');
+  const [correo, setCorreo] = useState('');
+  const [consentimiento, setConsentimiento] = useState(false);
+
+  // Cargar desde localStorage al iniciar
   useEffect(() => {
-    const datosGuardados = localStorage.getItem('ink_needle_clientes');
-    if (datosGuardados) {
-      setClientes(JSON.parse(datosGuardados));
+    const guardados = localStorage.getItem('ink_needle_fichas');
+    if (guardados) {
+      setClientes(JSON.parse(guardados));
+    } else {
+      // Datos de prueba iniciales corregidos
+      const iniciales: FichaCliente[] = [
+        { id: '1', nombre: 'Bastian Portilla', fechaNacimiento: '2000-05-15', alergias: 'Látex', numeroContacto: '+56922387381', correo: 'bastian@correo.com', consentimientoFirmado: true },
+        { id: '2', nombre: 'Anahí Gómez', fechaNacimiento: '1998-11-22', alergias: 'Penicilina', numeroContacto: '+56912345678', correo: 'anahi@correo.com', consentimientoFirmado: false }
+      ];
+      setClientes(iniciales);
+      localStorage.setItem('ink_needle_fichas', JSON.stringify(iniciales));
     }
   }, []);
 
-  // Guardar en formulario
-  const handleAgregarCliente = (e: React.FormEvent) => {
+  const handleCrearFicha = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!nombre || !rut || !telefono) {
-      alert('Por favor, rellena los campos obligatorios');
+    if (!nombre || !numeroContacto || !correo) {
+      alert('Por favor completa los campos obligatorios.');
       return;
     }
 
-    const nuevoCliente: Cliente = {
+    const nuevaFicha: FichaCliente = {
       id: crypto.randomUUID(),
       nombre,
-      rut,
-      telefono,
-      zonaPerforacion: zona,
+      fechaNacimiento,
       alergias: alergias || 'Ninguna',
-      fechaRegistro: new Date().toLocaleDateString('es-CL')
+      numeroContacto,
+      correo,
+      consentimientoFirmado: consentimiento
     };
 
-    const listaActualizada = [...clientes, nuevoCliente];
+    const listaActualizada = [...clientes, nuevaFicha];
     setClientes(listaActualizada);
-    localStorage.setItem('ink_needle_clientes', JSON.stringify(listaActualizada));
+    localStorage.setItem('ink_needle_fichas', JSON.stringify(listaActualizada));
 
     // Limpiar formulario
     setNombre('');
-    setRut('');
-    setTelefono('');
+    setFechaNacimiento('');
     setAlergias('');
-    alert('Cliente registrado con éxito');
+    setNumeroContacto('');
+    setCorreo('');
+    setConsentimiento(false);
+    alert('¡Ficha clínica registrada con éxito!');
+  };
+
+  const handleEliminarFicha = (id: string) => {
+    if (window.confirm('¿Seguro que deseas eliminar este registro clínico?')) {
+      const filtrados = clientes.filter(c => c.id !== id);
+      setClientes(filtrados);
+      localStorage.setItem('ink_needle_fichas', JSON.stringify(filtrados));
+    }
   };
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', fontFamily: 'sans-serif' }}>
-      {/* Reutilizamos un menú básico rápido arriba o a la izquierda */}
+      {/* Menú Lateral */}
       <div style={{ width: '250px', backgroundColor: '#1e1e2f', color: 'white', padding: '20px' }}>
         <h3>Ink & Needle</h3>
-        <Link to="/dashboard" style={{ color: 'white', display: 'block', marginBottom: '10px' }}>🏠 Volver al Inicio</Link>
+        <p style={{ fontSize: '13px', color: '#a0a0b0' }}>Personal: {usuario?.nombre}</p>
+        <Link to="/dashboard" style={{ color: 'white', display: 'block', marginBottom: '10px', textDecoration: 'none' }}>🏠 Volver al Inicio</Link>
+        <Link to="/citas" style={{ color: '#d0d0d0', display: 'block', marginBottom: '10px', textDecoration: 'none' }}>📅 Ver Citas</Link>
+        <Link to="/inventario" style={{ color: '#d0d0d0', display: 'block', textDecoration: 'none' }}>📦 Inventario</Link>
       </div>
 
+      {/* Panel de Contenido */}
       <main style={{ flex: 1, padding: '30px', backgroundColor: '#f4f6f9' }}>
-        <h2>👥 Registro y Control de Clientes (Operador: {usuario?.nombre})</h2>
+        <h2>👥 Registro de Fichas Clínicas y Consentimientos</h2>
 
-        {/* FORMULARIO DE INGRESO */}
+        {/* Formulario de Alta */}
         <div style={{ background: 'white', padding: '20px', borderRadius: '8px', marginBottom: '30px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-          <h3>Nueva Ficha de Perforación</h3>
-          <form onSubmit={handleAgregarCliente} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+          <h3>Nueva Ficha Obligatoria (Pre-Perforación)</h3>
+          <form onSubmit={handleCrearFicha} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
             <div>
-              <label>Nombre Completo *</label>
-              <input type="text" value={nombre} onChange={e => setNombre(e.target.value)} style={{ width: '100%', padding: '8px', marginTop: '5px' }} placeholder="Juan Pérez" />
+              <label>Nombre Completo del Cliente *</label>
+              <input type="text" value={nombre} onChange={e => setNombre(e.target.value)} style={{ width: '100%', padding: '8px', marginTop: '5px' }} required />
             </div>
             <div>
-              <label>RUT *</label>
-              <input type="text" value={rut} onChange={e => setRut(e.target.value)} style={{ width: '100%', padding: '8px', marginTop: '5px' }} placeholder="12.345.678-9" />
+              <label>Fecha de Nacimiento *</label>
+              <input type="date" value={fechaNacimiento} onChange={e => setFechaNacimiento(e.target.value)} style={{ width: '100%', padding: '8px', marginTop: '5px' }} required />
             </div>
             <div>
-              <label>Teléfono *</label>
-              <input type="text" value={telefono} onChange={e => setTelefono(e.target.value)} style={{ width: '100%', padding: '8px', marginTop: '5px' }} placeholder="+56912345678" />
+              <label>Número de Contacto (WhatsApp) *</label>
+              <input type="text" value={numeroContacto} onChange={e => setNumeroContacto(e.target.value)} style={{ width: '100%', padding: '8px', marginTop: '5px' }} placeholder="+569..." required />
             </div>
             <div>
-              <label>Zona a Perforar</label>
-              <select value={zona} onChange={e => setZona(e.target.value)} style={{ width: '100%', padding: '8px', marginTop: '5px' }}>
-                <option value="Septum">Septum</option>
-                <option value="Nostril">Nostril</option>
-                <option value="Industrial">Industrial</option>
-                <option value="Helix">Helix</option>
-                <option value="Navel (Ombligo)">Navel (Ombligo)</option>
-              </select>
+              <label>Correo Electrónico *</label>
+              <input type="email" value={correo} onChange={e => setCorreo(e.target.value)} style={{ width: '100%', padding: '8px', marginTop: '5px' }} placeholder="ejemplo@correo.com" required />
             </div>
             <div style={{ gridColumn: '1 / span 2' }}>
               <label>Alergias o Contraindicaciones Médicas</label>
-              <textarea value={alergias} onChange={e => setAlergias(e.target.value)} style={{ width: '100%', padding: '8px', marginTop: '5px' }} placeholder="Ej: Alergia al níquel, toma anticoagulantes..." />
+              <input type="text" value={alergias} onChange={e => setAlergias(e.target.value)} style={{ width: '100%', padding: '8px', marginTop: '5px' }} placeholder="Ej: Látex, metales, penicilina (o dejar vacío si no tiene)" />
             </div>
-            <button type="submit" style={{ gridColumn: '1 / span 2', padding: '10px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>
-              Registrar Cliente y Crear Ficha
-            </button>
+            <div style={{ gridColumn: '1 / span 2', display: 'flex', alignItems: 'center', gap: '10px', margin: '10px 0' }}>
+              <input type="checkbox" id="consent" checked={consentimiento} onChange={e => setConsentimiento(e.target.checked)} style={{ transform: 'scale(1.2)' }} />
+              <label htmlFor="consent" style={{ fontWeight: 'bold', color: '#333' }}>¿El cliente firmó el documento de consentimiento legal?</label>
+            </div>
+            <div style={{ gridColumn: '1 / span 2' }}>
+              <button type="submit" style={{ width: '100%', padding: '10px', backgroundColor: '#17a2b8', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>
+                💾 Guardar Ficha en Base de Datos
+              </button>
+            </div>
           </form>
         </div>
 
-        {/* TABLA DE CLIENTES */}
+        {/* Listado / Tabla */}
         <div style={{ background: 'white', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-          <h3>Clientes Registrados</h3>
+          <h3>Fichas Registradas</h3>
           <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px' }}>
             <thead>
               <tr style={{ backgroundColor: '#eee', textAlign: 'left' }}>
-                <th style={{ padding: '10px' }}>Nombre</th>
-                <th style={{ padding: '10px' }}>RUT</th>
-                <th style={{ padding: '10px' }}>Zona</th>
-                <th style={{ padding: '10px' }}>Fecha</th>
-                <th style={{ padding: '10px' }}>Acciones</th>
+                <th style={{ padding: '10px' }}>Cliente</th>
+                <th style={{ padding: '10px' }}>Contacto / Email</th>
+                <th style={{ padding: '10px' }}>F. Nacimiento</th>
+                <th style={{ padding: '10px' }}>Alergias</th>
+                <th style={{ padding: '10px' }}>Consentimiento</th>
+                <th style={{ padding: '10px' }}>Acción</th>
               </tr>
             </thead>
             <tbody>
-              {clientes.length === 0 ? (
-                <tr><td colSpan={5} style={{ padding: '10px', textAlign: 'center' }}>No hay clientes registrados en este navegador.</td></tr>
-              ) : (
-                clientes.map(c => (
-                  <tr key={c.id} style={{ borderBottom: '1px solid #ddd' }}>
-                    <td style={{ padding: '10px' }}>{c.nombre}</td>
-                    <td style={{ padding: '10px' }}>{c.rut}</td>
-                    <td style={{ padding: '10px' }}><span style={{ background: '#e2f0fd', color: '#007bff', padding: '3px 8px', borderRadius: '4px' }}>{c.zonaPerforacion}</span></td>
-                    <td style={{ padding: '10px' }}>{c.fechaRegistro}</td>
-                    <td style={{ padding: '10px' }}>
-                      {/* Aquí ocupamos la RUTA DINÁMICA pasándole el ID único */}
-                      <Link to={`/clientes/${c.id}`} style={{ padding: '5px 10px', backgroundColor: '#007bff', color: 'white', textDecoration: 'none', borderRadius: '4px', fontSize: '13px' }}>
-                        👁️ Ver Ficha Técnica
-                      </Link>
-                    </td>
-                  </tr>
-                ))
-              )}
+              {clientes.map(c => (
+                <tr key={c.id} style={{ borderBottom: '1px solid #ddd' }}>
+                  <td style={{ padding: '10px', fontWeight: 'bold' }}>{c.nombre}</td>
+                  <td style={{ padding: '10px' }}>
+                    <small>{c.numeroContacto}</small><br/>
+                    <small style={{ color: '#666' }}>{c.correo}</small>
+                  </td>
+                  <td style={{ padding: '10px' }}>{c.fechaNacimiento}</td>
+                  <td style={{ padding: '10px', color: c.alergias !== 'Ninguna' ? 'red' : 'inherit' }}>⚠️ {c.alergias}</td>
+                  <td style={{ padding: '10px' }}>
+                    <span style={{ backgroundColor: c.consentimientoFirmado ? '#d4edda' : '#f8d7da', color: c.consentimientoFirmado ? '#155724' : '#721c24', padding: '3px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold' }}>
+                      {c.consentimientoFirmado ? 'Firmado' : 'Pendiente'}
+                    </span>
+                  </td>
+                  <td style={{ padding: '10px' }}>
+                    <button onClick={() => handleEliminarFicha(c.id)} style={{ backgroundColor: '#dc3545', color: 'white', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer' }}>
+                      Eliminar
+                    </button>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
