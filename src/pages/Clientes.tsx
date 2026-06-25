@@ -1,18 +1,7 @@
-
-// src/pages/Clientes.tsx
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-
-interface Cliente {
-  id: string;
-  nombre: string;
-  rut: string;
-  telefono: string;
-  edad: number;
-  alergias: string;
-}
-
+import type { Cliente } from '../types/index'; // 👈 Agregamos "type" aquí
 export const Clientes: React.FC = () => {
   const { usuario } = useAuth();
   const [clientes, setClientes] = useState<Cliente[]>([]);
@@ -35,7 +24,7 @@ export const Clientes: React.FC = () => {
     } else {
       const iniciales: Cliente[] = [
         { id: '1', nombre: 'Bastian Portilla', rut: '19.876.543-2', telefono: '+56922387381', edad: 24, alergias: 'Ninguna' },
-        { id: '2', nombre: 'Anahí Gómez', rut: '20.123.456-k', telefono: '+56912345678', edad: 21, alergias: 'Alergia al Látex (Usa guantes de Nitrilo)' }
+        { id: '2', nombre: 'Anahí Sanhueza', rut: '21.456.789-0', telefono: '+56987654321', edad: 21, alergias: 'Alergia a la penicilina y látex' }
       ];
       setClientes(iniciales);
       localStorage.setItem('ink_needle_clientes_crud', JSON.stringify(iniciales));
@@ -44,21 +33,25 @@ export const Clientes: React.FC = () => {
 
   const handleCrearCliente = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!nombre || !rut || !edad) return;
+    if (!nombre.trim() || !rut.trim() || !edad.trim() || !alergias.trim()) {
+      alert('Por favor complete los campos obligatorios (Nombre, RUT, Edad, Alergias).');
+      return;
+    }
 
     const nuevoCliente: Cliente = {
       id: crypto.randomUUID(),
       nombre,
       rut,
-      telefono,
+      telefono: telefono || 'No registra',
       edad: Number(edad),
-      alergias: alergias || 'Ninguna'
+      alergias
     };
 
-    const listaActualizada = [...clientes, nuevoCliente];
-    setClientes(listaActualizada);
-    localStorage.setItem('ink_needle_clientes_crud', JSON.stringify(listaActualizada));
+    const actualizados = [...clientes, nuevoCliente];
+    setClientes(actualizados);
+    localStorage.setItem('ink_needle_clientes_crud', JSON.stringify(actualizados));
 
+    // Limpiar formulario
     setNombre('');
     setRut('');
     setTelefono('');
@@ -67,11 +60,8 @@ export const Clientes: React.FC = () => {
   };
 
   const handleEliminarCliente = (id: string) => {
-    if (!esAdmin) {
-      alert('Error: No tienes permisos de Administrador para eliminar registros.');
-      return;
-    }
-    if (window.confirm('¿Seguro que deseas eliminar esta ficha clínica de la base de datos?')) {
+    if (!esAdmin) return;
+    if (window.confirm('¿Está seguro de eliminar esta ficha clínica de forma permanente?')) {
       const filtrados = clientes.filter(c => c.id !== id);
       setClientes(filtrados);
       localStorage.setItem('ink_needle_clientes_crud', JSON.stringify(filtrados));
@@ -80,7 +70,8 @@ export const Clientes: React.FC = () => {
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#121214', color: '#e1e1e6', fontFamily: 'sans-serif' }}>
-      {/* SIDEBAR */}
+      
+      {/* SIDEBAR UNIFICADO */}
       <div style={{ width: '260px', backgroundColor: '#1a1a1e', borderRight: '1px solid #29292e', padding: '20px' }}>
         <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#ffffff', textAlign: 'center', marginBottom: '40px' }}>
           INK & <span style={{ color: '#e50914' }}>NEEDLE</span>
@@ -89,62 +80,56 @@ export const Clientes: React.FC = () => {
           <Link to="/dashboard" style={{ padding: '12px 15px', color: '#a8a8b3', textDecoration: 'none' }}>Panel Principal</Link>
           <Link to="/citas" style={{ padding: '12px 15px', color: '#a8a8b3', textDecoration: 'none' }}>📅 Agenda de Citas</Link>
           <Link to="/clientes" style={{ padding: '12px 15px', color: '#fff', backgroundColor: '#29292e', textDecoration: 'none', borderRadius: '6px', borderLeft: '4px solid #e50914', fontWeight: 'bold' }}>👥 Fichas Clínicas</Link>
-          <Link to="/inventario" style={{ padding: '12px 15px', color: '#a8a8b3', textDecoration: 'none' }}>📦 Catálogo e Inventario</Link>
+          <Link to="/servicios" style={{ padding: '12px 15px', color: '#a8a8b3', textDecoration: 'none' }}>💎 Servicios</Link>
         </nav>
       </div>
 
-      {/* CONTENIDO */}
+      {/* CONTENIDO PRINCIPAL */}
       <main style={{ flex: 1, padding: '30px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-          <h2 style={{ color: '#fff' }}>👥 Base de Fichas Clínicas</h2>
-          <span style={{ 
-            fontSize: '12px', 
-            padding: '5px 12px', 
-            borderRadius: '12px', 
-            backgroundColor: esAdmin ? 'rgba(40, 167, 69, 0.2)' : 'rgba(229, 9, 20, 0.2)', 
-            color: esAdmin ? '#28a745' : '#e50914',
-            fontWeight: 'bold'
-          }}>
-            Perfil: {esAdmin ? '⚡ Administrador' : '🔒 Staff Limitado'}
-          </span>
-        </div>
+        <h2 style={{ color: '#fff', marginBottom: '20px', textAlign: 'left' }}>👥 Registro de Fichas Clínicas</h2>
 
         {/* FORMULARIO */}
-        <div style={{ backgroundColor: '#1a1a1e', border: '1px solid #29292e', padding: '20px', borderRadius: '8px', marginBottom: '30px' }}>
-          <h3 style={{ marginBottom: '15px', color: '#fff' }}>Registrar Nuevo Cliente</h3>
-          <form onSubmit={handleCrearCliente} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '15px' }}>
-            <input type="text" placeholder="Nombre Completo" value={nombre} onChange={e => setNombre(e.target.value)} style={{ padding: '10px', backgroundColor: '#202024', border: '1px solid #29292e', color: '#fff', borderRadius: '4px' }} required />
-            <input type="text" placeholder="RUT o Documento" value={rut} onChange={e => setRut(e.target.value)} style={{ padding: '10px', backgroundColor: '#202024', border: '1px solid #29292e', color: '#fff', borderRadius: '4px' }} required />
-            <input type="text" placeholder="Teléfono" value={telefono} onChange={e => setTelefono(e.target.value)} style={{ padding: '10px', backgroundColor: '#202024', border: '1px solid #29292e', color: '#fff', borderRadius: '4px' }} />
-            <input type="number" placeholder="Edad" value={edad} onChange={e => setEdad(e.target.value)} style={{ padding: '10px', backgroundColor: '#202024', border: '1px solid #29292e', color: '#fff', borderRadius: '4px' }} required />
-            <input type="text" placeholder="Condiciones Médicas / Alergias" value={alergias} onChange={e => setAlergias(e.target.value)} style={{ gridColumn: '2 / span 2', padding: '10px', backgroundColor: '#202024', border: '1px solid #29292e', color: '#fff', borderRadius: '4px' }} />
+        <div style={{ backgroundColor: '#1a1a1e', border: '1px solid #29292e', padding: '25px', borderRadius: '8px', marginBottom: '30px', textAlign: 'left' }}>
+          <h3 style={{ marginTop: 0, marginBottom: '20px', color: '#fff' }}>Registrar Nueva Ficha</h3>
+          <form onSubmit={handleCrearCliente} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+            <input type="text" placeholder="Nombre Completo" value={nombre} onChange={e => setNombre(e.target.value)} style={{ padding: '12px', backgroundColor: '#202024', border: '1px solid #29292e', color: '#fff', borderRadius: '6px' }} />
+            <input type="text" placeholder="RUT (Ej: 12.345.678-9)" value={rut} onChange={e => setRut(e.target.value)} style={{ padding: '12px', backgroundColor: '#202024', border: '1px solid #29292e', color: '#fff', borderRadius: '6px' }} />
+            <input type="text" placeholder="Teléfono" value={telefono} onChange={e => setTelefono(e.target.value)} style={{ padding: '12px', backgroundColor: '#202024', border: '1px solid #29292e', color: '#fff', borderRadius: '6px' }} />
+            <input type="number" placeholder="Edad" value={edad} onChange={e => setEdad(e.target.value)} style={{ padding: '12px', backgroundColor: '#202024', border: '1px solid #29292e', color: '#fff', borderRadius: '6px' }} />
+            <input type="text" placeholder="Alergias / Contraindicaciones Médicas" value={alergias} onChange={e => setAlergias(e.target.value)} style={{ gridColumn: '1 / span 2', padding: '12px', backgroundColor: '#202024', border: '1px solid #29292e', color: '#fff', borderRadius: '6px' }} />
             
-            <button type="submit" style={{ gridColumn: '1 / span 3', padding: '12px', backgroundColor: '#e50914', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>
+            <button type="submit" style={{ gridColumn: '1 / span 2', padding: '14px', backgroundColor: '#e50914', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '15px' }}>
               💾 Guardar Ficha Clínica
             </button>
           </form>
         </div>
 
-        {/* TABLA */}
+        {/* TABLA DE CLIENTES */}
         <div style={{ backgroundColor: '#1a1a1e', border: '1px solid #29292e', padding: '20px', borderRadius: '8px' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid #29292e' }}>
-                <th style={{ color: '#7c7c8a', paddingBottom: '10px' }}>Paciente / RUT</th>
-                <th style={{ color: '#7c7c8a', paddingBottom: '10px' }}>Contacto</th>
-                <th style={{ color: '#7c7c8a', paddingBottom: '10px' }}>Edad</th>
-                <th style={{ color: '#7c7c8a', paddingBottom: '10px' }}>Ficha Médica</th>
-                <th style={{ color: '#7c7c8a', paddingBottom: '10px' }}>Acciones</th>
+                <th style={{ color: '#7c7c8a', paddingBottom: '12px' }}>Cliente / RUT</th>
+                <th style={{ color: '#7c7c8a', paddingBottom: '12px' }}>Teléfono</th>
+                <th style={{ color: '#7c7c8a', paddingBottom: '12px' }}>Edad</th>
+                <th style={{ color: '#7c7c8a', paddingBottom: '12px' }}>Alergias</th>
+                <th style={{ color: '#7c7c8a', paddingBottom: '12px' }}>Ficha Médica</th>
+                <th style={{ color: '#7c7c8a', paddingBottom: '12px' }}>Acciones</th>
               </tr>
             </thead>
             <tbody>
               {clientes.map(c => (
                 <tr key={c.id} style={{ borderBottom: '1px solid #202024' }}>
-                  <td style={{ padding: '12px 0', color: '#fff' }}><strong>{c.nombre}</strong><br/><small style={{ color: '#7c7c8a' }}>{c.rut}</small></td>
-                  <td style={{ padding: '12px 0', color: '#c4c4cc' }}>{c.telefono || 'No registra'}</td>
-                  <td style={{ padding: '12px 0', color: '#c4c4cc' }}>{c.edad} años</td>
-                  <td style={{ padding: '12px 0', color: '#feb700' }}>{c.alergias}</td>
-                  <td style={{ padding: '12px 0' }}>
+                  <td style={{ padding: '14px 0', color: '#fff' }}><strong>{c.nombre}</strong><br/><small style={{ color: '#7c7c8a' }}>{c.rut}</small></td>
+                  <td style={{ padding: '14px 0', color: '#c4c4cc' }}>{c.telefono || 'No registra'}</td>
+                  <td style={{ padding: '14px 0', color: '#c4c4cc' }}>{c.edad} años</td>
+                  <td style={{ padding: '14px 0', color: '#feb700' }}>⚠️ {c.alergias}</td>
+                  <td style={{ padding: '14px 0' }}>
+                    <Link to={`/clientes/${c.id}`} style={{ color: '#e50914', textDecoration: 'none', fontWeight: 'bold' }}>
+                      👁️ Ver Ficha
+                    </Link>
+                  </td>
+                  <td style={{ padding: '14px 0' }}>
                     {esAdmin ? (
                       <button onClick={() => handleEliminarCliente(c.id)} style={{ backgroundColor: 'transparent', color: '#e50914', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}>
                         Eliminar
@@ -159,6 +144,7 @@ export const Clientes: React.FC = () => {
           </table>
         </div>
       </main>
+
     </div>
   );
 };
