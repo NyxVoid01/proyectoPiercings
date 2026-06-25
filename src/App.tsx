@@ -43,4 +43,13 @@ function App() {
   );
 }
 
+export default App;        <Route path="/citas" element={usuario ? <Citas /> : <Navigate to="/login" />} />
+        <Route path="/servicios" element={usuario ? <Servicios /> : <Navigate to="/login" />} />
+
+        <Route path="*" element={<Navigate to="/login" />} />
+      </Routes>
+    </Router>
+  );
+}
+
 export default App;
