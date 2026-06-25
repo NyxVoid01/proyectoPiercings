@@ -1,161 +1,59 @@
-
-// src/pages/Login.tsx
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 export const Login: React.FC = () => {
-  const { login } = useAuth();
-  const navigate = useNavigate();
-  
-  const [nombre, setNombre] = useState('');
-  const [password, setPassword] = useState('');
+  const [username, setUsername] = useState('');
+  const [rol, setRol] = useState<'administrador' | 'perforador'>('administrador');
   const [error, setError] = useState('');
+  const { login } = useAuth();
 
   const handleSubmit = (e: React.FormEvent) => {
-  e.preventDefault();
-  setError('');
+    e.preventDefault();
 
-  if (!nombre.trim() || !password.trim()) {
-    setError('Por favor, completa todos los campos.');
-    return;
-  }
+    if (!username.trim()) {
+      setError('Por favor, ingresa tu nombre de usuario.');
+      return;
+    }
 
-  // 🌟 DETECTAR ROL AUTOMÁTICAMENTE
-  // Si escribe "admin", el rol será 'admin'. Si escribe otra cosa, será 'staff'
-  const rolDefinido = nombre.trim().toLowerCase() === 'admin' ? 'admin' : 'staff';
-
-  // Pasar el nombre y el rol dinámico
-  login(nombre.trim(), rolDefinido as any);
-
-  // Redirigir al panel de control
-  navigate('/dashboard');
-};
+    login(username, rol);
+  };
 
   return (
-    <div style={{ 
-      display: 'flex', 
-      justifyContent: 'center', 
-      alignItems: 'center', 
-      minHeight: '100vh', 
-      backgroundColor: '#121214', 
-      fontFamily: 'sans-serif' 
-    }}>
-      <div style={{ 
-        width: '100%', 
-        maxWidth: '400px', 
-        backgroundColor: '#1a1a1e', 
-        border: '1px solid #29292e', 
-        borderRadius: '12px', 
-        padding: '40px 30px', 
-        boxShadow: '0 8px 24px rgba(0,0,0,0.2)' 
-      }}>
-        {/* LOGO */}
-        <div style={{ 
-          fontSize: '24px', 
-          fontWeight: 'bold', 
-          color: '#ffffff', 
-          textAlign: 'center', 
-          marginBottom: '8px', 
-          letterSpacing: '1.5px' 
-        }}>
-          INK & <span style={{ color: '#e50914' }}>NEEDLE</span>
-        </div>
-        <p style={{ 
-          color: '#7c7c8a', 
-          fontSize: '13px', 
-          textAlign: 'center', 
-          marginBottom: '30px' 
-        }}>
-          Intranet de Gestión Operativa
-        </p>
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh', padding: '20px' }}>
+      <div style={{ width: '100%', maxWidth: '400px', padding: '40px 30px', borderRadius: '12px', background: 'var(--code-bg)', border: '1px solid var(--border)', boxShadow: 'var(--shadow)', textAlign: 'left' }}>
+        <h2 style={{ fontSize: '26px', marginBottom: '6px', color: 'var(--text-h)' }}>Studio Piercing Intranet</h2>
+        <p style={{ fontSize: '14px', marginBottom: '24px', color: 'var(--text)' }}>Inicia sesión para gestionar el estudio.</p>
 
-        {error && (
-          <div style={{ 
-            backgroundColor: 'rgba(229, 9, 20, 0.1)', 
-            color: '#e50914', 
-            padding: '10px', 
-            borderRadius: '6px', 
-            fontSize: '13px', 
-            marginBottom: '20px', 
-            textAlign: 'center',
-            border: '1px solid rgba(229, 9, 20, 0.2)'
-          }}>
-            ⚠️ {error}
-          </div>
-        )}
-
-        {/* FORMULARIO */}
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div>
-            <label style={{ color: '#a8a8b3', fontSize: '13px', display: 'block', marginBottom: '8px' }}>
-              Nombre de Usuario / Profesional
-            </label>
+            <label style={{ display: 'block', fontSize: '14px', marginBottom: '6px', fontWeight: '500', color: 'var(--text-h)' }}>Nombre de Usuario</label>
             <input 
               type="text" 
-              placeholder="Ej: Fernando o Angel" 
-              value={nombre}
-              onChange={e => setNombre(e.target.value)}
-              style={{ 
-                width: '100%', 
-                padding: '12px', 
-                backgroundColor: '#202024', 
-                border: '1px solid #29292e', 
-                color: '#ffffff', 
-                borderRadius: '6px',
-                fontSize: '14px',
-                outline: 'none'
-              }} 
-              required
+              value={username}
+              onChange={(e) => { setUsername(e.target.value); if (error) setError(''); }}
+              placeholder="Ej: Abby Villegas"
+              style={{ width: '100%', padding: '10px 14px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text-h)', boxSizing: 'border-box' }}
             />
           </div>
 
           <div>
-            <label style={{ color: '#a8a8b3', fontSize: '13px', display: 'block', marginBottom: '8px' }}>
-              Contraseña de Acceso
-            </label>
-            <input 
-              type="password" 
-              placeholder="••••••••" 
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              style={{ 
-                width: '100%', 
-                padding: '12px', 
-                backgroundColor: '#202024', 
-                border: '1px solid #29292e', 
-                color: '#ffffff', 
-                borderRadius: '6px',
-                fontSize: '14px',
-                outline: 'none'
-              }} 
-              required
-            />
+            <label style={{ display: 'block', fontSize: '14px', marginBottom: '6px', fontWeight: '500', color: 'var(--text-h)' }}>Rol de Acceso</label>
+            <select 
+              value={rol} 
+              onChange={(e) => setRol(e.target.value as 'administrador' | 'perforador')}
+              style={{ width: '100%', padding: '10px 14px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text-h)', boxSizing: 'border-box' }}
+            >
+              <option value="administrador">Administrador</option>
+              <option value="perforador">Perforador / Staff</option>
+            </select>
           </div>
 
-          <button 
-            type="submit" 
-            style={{ 
-              width: '100%', 
-              padding: '14px', 
-              backgroundColor: '#e50914', 
-              color: '#ffffff', 
-              border: 'none', 
-              borderRadius: '6px', 
-              cursor: 'pointer', 
-              fontWeight: 'bold',
-              fontSize: '14px',
-              marginTop: '10px',
-              transition: 'background-color 0.2s'
-            }}
-          >
-            Entrar al Sistema
+          {error && <p style={{ color: '#ef4444', fontSize: '14px', margin: '0' }}>⚠️ {error}</p>}
+
+          <button type="submit" style={{ padding: '12px', borderRadius: '6px', border: 'none', background: 'var(--accent)', color: '#fff', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer', marginTop: '8px' }}>
+            Ingresar al Sistema
           </button>
         </form>
-
-        <div style={{ marginTop: '25px', textAlign: 'center', fontSize: '12px', color: '#50505a' }}>
-          Permisos determinados según el perfil asignado al staff.
-        </div>
       </div>
     </div>
   );
