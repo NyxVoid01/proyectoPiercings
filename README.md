@@ -1,75 +1,43 @@
-# React + TypeScript + Vite
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+# ✒️ Ink & Needle - Intranet de Gestión
 
-Currently, two official plugins are available:
+Sistema de intranet para la administración interna de un estudio de piercings y tatuajes. Desarrollado con React, TypeScript, Vite y persistencia de datos local.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 📦 Módulos del Sistema
 
-## React Compiler
+* **1. Inicio de Sesión (`/login`):** Pantalla de acceso que adapta las funciones según quién ingrese. Si entras como `admin`, tienes control total para editar o borrar. Si usas cualquier otro nombre, entras como personal (Staff) y solo podrás ver la información sin modificarla.
+* **2. Panel Principal (`/dashboard`):** Es la pantalla de bienvenida y el menú central que te permite navegar rápidamente hacia todas las herramientas del estudio.
+* **3. Agenda de Citas (`/citas`):** Un calendario interno para organizar las reservas. Aquí se guarda la fecha, la hora, qué tipo de perforación se hará y qué profesional atenderá al cliente.
+* **4. Fichas de Clientes (`/clientes`):** Un registro de clientes enfocado en su salud y seguridad. Guarda sus datos de contacto, historial de alergias importantes y confirma si ya firmaron el consentimiento. Toda la información se guarda automáticamente en el navegador.
+* **5. Inventario y Servicios (`/inventario`):** Control del catálogo de piercings, lista de precios y stock de materiales (joyas, agujas, insumos). Funciona con seguridad inteligente: solo los administradores pueden añadir o quitar productos, mientras que el resto del equipo solo puede consultar el stock disponible.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+---
 
-## Expanding the ESLint configuration
+## 🛠️ Stack Tecnológico
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+* **Frontend:** React 18, TypeScript
+* **Herramienta de Construcción:** Vite
+* **Enrutamiento:** React Router Dom
+* **Estado y Autenticación:** Context API (AuthContext)
+* **Almacenamiento:** LocalStorage
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+---
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## 🚀 Instalación y Configuración
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+paso 1: Navegar a la carpeta del proyecto:
 
-```
+cd proyecto-piercings
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+paso 2: Instalar las dependencias:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+npm install
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+paso 3: Iniciar el servidor local:
 
-```
+npm run dev
+
+paso 4: Visualización:
+
+Abra en su navegador la dirección: http://localhost:5173
+

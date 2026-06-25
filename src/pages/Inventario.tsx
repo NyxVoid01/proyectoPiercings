@@ -14,6 +14,36 @@ interface ServicioItem {
   stockInsumo: number;
 }
 
+// Listas predefinidas para los desplegables
+const LISTA_PROCEDIMIENTOS = [
+  "Perforación Helix",
+  "Perforación Nostril",
+  "Perforación Navel",
+  "Septum Piercing",
+  "Industrial Piercing",
+  "Labret Piercing",
+  "Perforación Tragus"
+];
+
+const LISTA_UBICACIONES = [
+  "Oreja (Cartílago)",
+  "Nariz",
+  "Ombligo",
+  "Septum (Tabique)",
+  "Labio",
+  "Ceja",
+  "Oreja (Lóbulo)"
+];
+
+const LISTA_JOYAS = [
+  "Labret de Titanio",
+  "Argolla Nostril Oro",
+  "Banana con Cristal",
+  "Circular Barbell (Herradura)",
+  "Barbell Recto Acero",
+  "Argolla Clicker Titanio"
+];
+
 export const Inventario: React.FC = () => {
   const { usuario } = useAuth();
   const [servicios, setServicios] = useState<ServicioItem[]>([]);
@@ -28,7 +58,7 @@ export const Inventario: React.FC = () => {
 
   // DETECCIÓN DE PERMISOS DE ADMINISTRADOR
   const nombreMinuscula = usuario?.nombre?.toLowerCase() || '';
-  const esAdmin = nombreMinuscula === 'fernando' || nombreMinuscula === 'angel';
+  const esAdmin = nombreMinuscula === 'fernando' || nombreMinuscula === 'angel' || nombreMinuscula === 'admin';
 
   useEffect(() => {
     const guardados = localStorage.getItem('ink_needle_servicios_crud');
@@ -73,7 +103,7 @@ export const Inventario: React.FC = () => {
 
   const handleEliminarServicio = (id: string) => {
     if (!esAdmin) {
-      alert('Acceso Denegado: Solo Fernando o Angel pueden dar de baja servicios del catálogo.');
+      alert('Acceso Denegado: Solo un administrador autorizado puede dar de baja servicios.');
       return;
     }
     if (window.confirm('¿Deseas quitar este servicio del catálogo comercial?')) {
@@ -82,7 +112,6 @@ export const Inventario: React.FC = () => {
       localStorage.setItem('ink_needle_servicios_crud', JSON.stringify(filtrados));
     }
   };
-
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#121214', color: '#e1e1e6', fontFamily: 'sans-serif' }}>
@@ -119,11 +148,53 @@ export const Inventario: React.FC = () => {
         <div style={{ backgroundColor: '#1a1a1e', border: '1px solid #29292e', padding: '20px', borderRadius: '8px', marginBottom: '30px' }}>
           <h3 style={{ marginBottom: '15px', color: '#fff' }}>Agregar Joya / Procedimiento</h3>
           <form onSubmit={handleCrearServicio} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '15px' }}>
-            <input type="text" placeholder="Procedimiento (Ej: Septum Piercing)" value={tipoServicio} onChange={e => setTipoServicio(e.target.value)} style={{ padding: '10px', backgroundColor: '#202024', border: '1px solid #29292e', color: '#fff', borderRadius: '4px' }} required />
-            <input type="text" placeholder="Ubicación Corporal" value={zona} onChange={e => setZona(e.target.value)} style={{ padding: '10px', backgroundColor: '#202024', border: '1px solid #29292e', color: '#fff', borderRadius: '4px' }} required />
+            
+            {/* DESPLEGABLE: Procedimiento */}
+            <select 
+              value={tipoServicio} 
+              onChange={e => setTipoServicio(e.target.value)} 
+              style={{ padding: '10px', backgroundColor: '#202024', border: '1px solid #29292e', color: tipoServicio ? '#fff' : '#7c7c8a', borderRadius: '4px', cursor: 'pointer' }} 
+              required
+            >
+              <option value="" disabled>✨ Selecciona un Procedimiento</option>
+              {LISTA_PROCEDIMIENTOS.map(opcion => (
+                <option key={opcion} value={opcion} style={{ backgroundColor: '#1a1a1e', color: '#fff' }}>{opcion}</option>
+              ))}
+            </select>
+
+            {/* DESPLEGABLE: Ubicación Corporal */}
+            <select 
+              value={zona} 
+              onChange={e => setZona(e.target.value)} 
+              style={{ padding: '10px', backgroundColor: '#202024', border: '1px solid #29292e', color: zona ? '#fff' : '#7c7c8a', borderRadius: '4px', cursor: 'pointer' }} 
+              required
+            >
+              <option value="" disabled>📍 Selecciona Ubicación Corporal</option>
+              {LISTA_UBICACIONES.map(opcion => (
+                <option key={opcion} value={opcion} style={{ backgroundColor: '#1a1a1e', color: '#fff' }}>{opcion}</option>
+              ))}
+            </select>
+
+            {/* INPUT: Precio */}
             <input type="number" placeholder="Precio ($)" value={precio} onChange={e => setPrecio(e.target.value)} style={{ padding: '10px', backgroundColor: '#202024', border: '1px solid #29292e', color: '#fff', borderRadius: '4px' }} required />
-            <input type="text" placeholder="Joya Asociada (Insumo)" value={accesorio} onChange={e => setAccesorio(e.target.value)} style={{ padding: '10px', backgroundColor: '#202024', border: '1px solid #29292e', color: '#fff', borderRadius: '4px' }} required />
+            
+            {/* DESPLEGABLE: Joya Asociada */}
+            <select 
+              value={accesorio} 
+              onChange={e => setAccesorio(e.target.value)} 
+              style={{ padding: '10px', backgroundColor: '#202024', border: '1px solid #29292e', color: accesorio ? '#fff' : '#7c7c8a', borderRadius: '4px', cursor: 'pointer' }} 
+              required
+            >
+              <option value="" disabled>💎 Selecciona Joya Asociada</option>
+              {LISTA_JOYAS.map(opcion => (
+                <option key={opcion} value={opcion} style={{ backgroundColor: '#1a1a1e', color: '#fff' }}>{opcion}</option>
+              ))}
+            </select>
+
+            {/* INPUT: Descuento */}
             <input type="number" placeholder="Descuento ($)" value={descuento} onChange={e => setDescuento(e.target.value)} style={{ padding: '10px', backgroundColor: '#202024', border: '1px solid #29292e', color: '#fff', borderRadius: '4px' }} />
+            
+            {/* INPUT: Stock */}
             <input type="number" placeholder="Stock Inicial Vitrina" value={stockInsumo} onChange={e => setStockInsumo(e.target.value)} style={{ padding: '10px', backgroundColor: '#202024', border: '1px solid #29292e', color: '#fff', borderRadius: '4px' }} required />
             
             <button type="submit" style={{ gridColumn: '1 / span 3', padding: '12px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>
