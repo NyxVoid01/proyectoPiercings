@@ -1,106 +1,114 @@
 
 // src/pages/Dashboard.tsx
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 export const Dashboard: React.FC = () => {
   const { usuario, logout } = useAuth();
-  const [metricas, setMetricas] = useState({
-    totalCitas: 0,
-    citasPendientes: 0,
-    insumosBajos: 0
-  });
+  const navigate = useNavigate();
+  
+  // Estados para contar datos reales del localStorage
+  const [totalCitas, setTotalCitas] = useState(0);
+  const [insumosBajos, setInsumosBajos] = useState(0);
+  const [proximasCitas, setProximasCitas] = useState<any[]>([]);
 
   useEffect(() => {
-    // Leer en tiempo real las citas e inventario creados en los módulos
-    const citas = JSON.parse(localStorage.getItem('ink_needle_citas') || '[]');
-    const inventario = JSON.parse(localStorage.getItem('ink_needle_inventario') || '[]');
+    // 1. Cargar y contar citas reales
+    const citasRaw = localStorage.getItem('ink_needle_citas_crud');
+    if (citasRaw) {
+      const listaCitas = JSON.parse(citasRaw);
+      setTotalCitas(listaCitas.length);
+      // Tomar las primeras 3 para mostrar en la tabla de inicio
+      setProximasCitas(listaCitas.slice(0, 3));
+    }
 
-    // Calcular KPI administrativos
-    const pendientes = citas.filter((c: any) => c.estado === 'Pendiente').length;
-    const bajos = inventario.filter((i: any) => i.stock <= 15).length;
-
-    setMetricas({
-      totalCitas: citas.length,
-      citasPendientes: pendientes,
-      insumosBajos: bajos
-    });
+    // 2. Cargar inventario y contar alertas de stock bajo (<= 15 unidades)
+    const inventarioRaw = localStorage.getItem('ink_needle_servicios_crud');
+    if (inventarioRaw) {
+      const listaInv = JSON.parse(inventarioRaw);
+      const alertas = listaInv.filter((item: any) => item.stockInsumo <= 15);
+      setInsumosBajos(alertas.length);
+    }
   }, []);
 
+  const handleCerrarSesion = () => {
+    logout();
+    navigate('/');
+  };
+
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', fontFamily: 'sans-serif' }}>
-      {/* Menú Lateral Cohesivo */}
-      <div style={{ width: '250px', backgroundColor: '#1e1e2f', color: 'white', padding: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-        <div>
-          <h3 style={{ letterSpacing: '1px' }}>Ink & Needle</h3>
-          <p style={{ fontSize: '13px', color: '#a0a0b0', marginBottom: '30px' }}>Bienvenido, {usuario?.nombre}</p>
-          
-          <Link to="/dashboard" style={{ color: '#007bff', display: 'block', marginBottom: '15px', textDecoration: 'none', fontWeight: 'bold' }}>🏠 Panel Principal</Link>
-          <Link to="/citas" style={{ color: '#d0d0d0', display: 'block', marginBottom: '15px', textDecoration: 'none' }}>📅 Agenda de Citas</Link>
-          <Link to="/inventario" style={{ color: '#d0d0d0', display: 'block', marginBottom: '15px', textDecoration: 'none' }}>📦 Inventario de Joyas</Link>
-          <Link to="/clientes" style={{ color: '#d0d0d0', display: 'block', marginBottom: '15px', textDecoration: 'none' }}>👥 Gestión de Clientes</Link>
+    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#121214', color: '#e1e1e6', fontFamily: 'sans-serif' }}>
+      {/* SIDEBAR DEL ESTUDIO */}
+      <div style={{ width: '260px', backgroundColor: '#1a1a1e', borderRight: '1px solid #29292e', padding: '20px', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#ffffff', textAlign: 'center', marginBottom: '40px', letterSpacing: '1px' }}>
+          INK & <span style={{ color: '#e50914' }}>NEEDLE</span>
         </div>
         
-        <button onClick={logout} style={{ backgroundColor: '#dc3545', color: 'white', border: 'none', padding: '10px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>
+        <nav style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <Link to="/dashboard" style={{ padding: '12px 15px', color: '#ffffff', backgroundColor: '#29292e', textDecoration: 'none', borderRadius: '6px', borderLeft: '4px solid #e50914', fontWeight: 'bold' }}>Panel Principal</Link>
+          <Link to="/citas" style={{ padding: '12px 15px', color: '#a8a8b3', textDecoration: 'none', borderRadius: '6px', fontWeight: 'medium' }}>📅 Agenda de Citas</Link>
+          <Link to="/clientes" style={{ padding: '12px 15px', color: '#a8a8b3', textDecoration: 'none', borderRadius: '6px', fontWeight: 'medium' }}>👥 Fichas Clínicas</Link>
+          <Link to="/inventario" style={{ padding: '12px 15px', color: '#a8a8b3', textDecoration: 'none', borderRadius: '6px', fontWeight: 'medium' }}>📦 Catálogo e Inventario</Link>
+        </nav>
+
+        <button onClick={handleCerrarSesion} style={{ marginTop: 'auto', padding: '10px', backgroundColor: '#e50914', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
           🚪 Cerrar Sesión
         </button>
       </div>
 
-      {/* Contenido de Control */}
-      <main style={{ flex: 1, padding: '30px', backgroundColor: '#f4f6f9' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
-          <div>
-            <h2 style={{ margin: 0 }}>Studio Manager — Control General</h2>
-            <p style={{ margin: '5px 0 0 0', color: '#666' }}>Resumen operativo de la tienda de perforaciones.</p>
+      {/* CONTENIDO PRINCIPAL */}
+      <main style={{ flex: 1, padding: '30px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px', borderBottom: '1px solid #29292e', paddingBottom: '15px' }}>
+          <h1 style={{ fontSize: '24px', fontWeight: '600', color: '#fff' }}>Resumen Operativo del Estudio</h1>
+          <div style={{ fontSize: '14px', color: '#c4c4cc', backgroundColor: '#202024', padding: '8px 15px', borderRadius: '20px', border: '1px solid #29292e' }}>
+            ⚡ Staff Activo: <strong style={{ color: '#fff' }}>{usuario?.nombre || 'Administrador'}</strong>
           </div>
-          <span style={{ backgroundColor: '#28a745', color: 'white', padding: '8px 15px', borderRadius: '20px', fontSize: '13px', fontWeight: 'bold' }}>
-            🟢 Estudio Conectado
-          </span>
         </div>
 
-        {/* Indicadores Clave en Tiempo Real (Métricas) */}
+        {/* TARJETAS DE INDICADORES EN TIEMPO REAL */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px', marginBottom: '30px' }}>
-          
-          {/* Tarjeta Citas Pendientes */}
-          <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', borderLeft: '5px solid #ffc107' }}>
-            <p style={{ color: '#888', margin: '0 0 10px 0', textTransform: 'uppercase', fontSize: '11px', fontWeight: 'bold' }}>Citas por Confirmar Abono</p>
-            <h3 style={{ fontSize: '36px', margin: 0, color: '#333' }}>{metricas.citasPendientes}</h3>
-            <Link to="/citas" style={{ fontSize: '12px', color: '#007bff', textDecoration: 'none', display: 'block', marginTop: '10px' }}>Revisar solicitudes de clientes →</Link>
+          <div style={{ backgroundColor: '#1a1a1e', border: '1px solid #29292e', borderRadius: '8px', padding: '20px' }}>
+            <h3 style={{ fontSize: '13px', color: '#7c7c8a', textTransform: 'uppercase', marginBottom: '10px' }}>Total Turnos</h3>
+            <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#ffffff' }}>{totalCitas} Agendados</div>
           </div>
-
-          {/* Tarjeta Alertas Stock */}
-          <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', borderLeft: '5px solid #dc3545' }}>
-            <p style={{ color: '#888', margin: '0 0 10px 0', textTransform: 'uppercase', fontSize: '11px', fontWeight: 'bold' }}>Joyas / Insumos Críticos</p>
-            <h3 style={{ fontSize: '36px', margin: 0, color: '#333' }}>{metricas.insumosBajos}</h3>
-            <Link to="/inventario" style={{ fontSize: '12px', color: '#007bff', textDecoration: 'none', display: 'block', marginTop: '10px' }}>Ver alertas de stock bajo →</Link>
+          <div style={{ backgroundColor: '#1a1a1e', border: '1px solid #29292e', borderRadius: '8px', padding: '20px' }}>
+            <h3 style={{ fontSize: '13px', color: '#7c7c8a', textTransform: 'uppercase', marginBottom: '10px' }}>Consentimientos</h3>
+            <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#28a745' }}>100% Digital</div>
           </div>
-
-          {/* Tarjeta Total Operaciones */}
-          <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', borderLeft: '5px solid #28a745' }}>
-            <p style={{ color: '#888', margin: '0 0 10px 0', textTransform: 'uppercase', fontSize: '11px', fontWeight: 'bold' }}>Total Historial Citas</p>
-            <h3 style={{ fontSize: '36px', margin: 0, color: '#333' }}>{metricas.totalCitas}</h3>
-            <Link to="/citas" style={{ fontSize: '12px', color: '#007bff', textDecoration: 'none', display: 'block', marginTop: '10px' }}>Ver bitácora del mes →</Link>
+          <div style={{ backgroundColor: '#1a1a1e', border: insumosBajos > 0 ? '1px solid #feb700' : '1px solid #29292e', borderRadius: '8px', padding: '20px' }}>
+            <h3 style={{ fontSize: '13px', color: insumosBajos > 0 ? '#feb700' : '#7c7c8a', textTransform: 'uppercase', marginBottom: '10px' }}>Alertas de Vitrina</h3>
+            <div style={{ fontSize: '32px', fontWeight: 'bold', color: insumosBajos > 0 ? '#feb700' : '#ffffff' }}>{insumosBajos} Críticos</div>
           </div>
-
         </div>
 
-        {/* Panel de Accesos Rápidos */}
-        <div style={{ background: 'white', padding: '25px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-          <h3 style={{ marginTop: 0, marginBottom: '10px' }}>⚡ Flujo de Trabajo Técnico</h3>
-          <p style={{ color: '#555', fontSize: '14px' }}>Accede rápidamente a los módulos actualizados con tu catálogo:</p>
-          
-          <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap', marginTop: '20px' }}>
-            <Link to="/citas" style={{ backgroundColor: '#007bff', color: 'white', padding: '12px 20px', borderRadius: '6px', textDecoration: 'none', fontWeight: 'bold', fontSize: '14px' }}>
-              📅 Validar y Asignar Citas
-            </Link>
-            <Link to="/inventario" style={{ backgroundColor: '#6c757d', color: 'white', padding: '12px 20px', borderRadius: '6px', textDecoration: 'none', fontWeight: 'bold', fontSize: '14px' }}>
-              📦 Abastecer Bodega de Joyería
-            </Link>
-            <Link to="/clientes" style={{ backgroundColor: '#17a2b8', color: 'white', padding: '12px 20px', borderRadius: '6px', textDecoration: 'none', fontWeight: 'bold', fontSize: '14px' }}>
-              👥 Fichas Clínicas de Clientes
-            </Link>
-          </div>
+        {/* VISTA RÁPIDA DE PRÓXIMOS CLIENTES */}
+        <div style={{ backgroundColor: '#1a1a1e', border: '1px solid #29292e', borderRadius: '8px', padding: '20px' }}>
+          <h2 style={{ fontSize: '18px', marginBottom: '20px', color: '#fff' }}>Próximas Sesiones en Agenda</h2>
+          {proximasCitas.length === 0 ? (
+            <p style={{ color: '#7c7c8a' }}>No hay citas registradas actualmente en el sistema.</p>
+          ) : (
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid #29292e' }}>
+                  <th style={{ color: '#7c7c8a', fontSize: '12px', paddingBottom: '12px', textTransform: 'uppercase' }}>Cliente</th>
+                  <th style={{ color: '#7c7c8a', fontSize: '12px', paddingBottom: '12px', textTransform: 'uppercase' }}>Perforación</th>
+                  <th style={{ color: '#7c7c8a', fontSize: '12px', paddingBottom: '12px', textTransform: 'uppercase' }}>Fecha / Hora</th>
+                  <th style={{ color: '#7c7c8a', fontSize: '12px', paddingBottom: '12px', textTransform: 'uppercase' }}>Profesional</th>
+                </tr>
+              </thead>
+              <tbody>
+                {proximasCitas.map((cita) => (
+                  <tr key={cita.id} style={{ borderBottom: '1px solid #202024' }}>
+                    <td style={{ padding: '12px 0', fontSize: '14px', color: '#fff', fontWeight: 'bold' }}>{cita.cliente}</td>
+                    <td style={{ padding: '12px 0', fontSize: '14px', color: '#c4c4cc' }}>{cita.tipoPerforacion}</td>
+                    <td style={{ padding: '12px 0', fontSize: '14px', color: '#c4c4cc' }}>{cita.fecha} a las {cita.hora}</td>
+                    <td style={{ padding: '12px 0', fontSize: '14px', color: '#e50914' }}>{cita.personaEncargada}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       </main>
     </div>
