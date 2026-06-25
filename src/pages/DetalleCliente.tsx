@@ -56,4 +56,26 @@ export const DetalleCliente: React.FC = () => {
       </div>
     </div>
   );
+};        </Link>
+        
+        <div style={{ borderBottom: '1px solid #29292e', paddingBottom: '15px', marginBottom: '20px' }}>
+          <h2 style={{ margin: 0, color: '#fff', fontSize: '22px', letterSpacing: '0.5px' }}>📋 FICHA MÉDICA E HISTORIAL</h2>
+          <p style={{ color: '#7c7c8a', margin: '5px 0 0 0', fontSize: '13px' }}>ID Registro Interno: {cliente.id}</p>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '18px', color: '#c4c4cc' }}>
+          <p style={{ margin: 0 }}><strong style={{ color: '#fff' }}>Nombre Completo:</strong> {cliente.nombre}</p>
+          <p style={{ margin: 0 }}><strong style={{ color: '#fff' }}>RUT / Identificación:</strong> {cliente.rut}</p>
+          <p style={{ margin: 0 }}><strong style={{ color: '#fff' }}>Teléfono de Contacto:</strong> {cliente.telefono || 'No registra'}</p>
+          <p style={{ margin: 0 }}><strong style={{ color: '#fff' }}>Edad:</strong> {cliente.edad} años</p>
+          
+          <div style={{ backgroundColor: 'rgba(254, 183, 0, 0.1)', padding: '15px', borderRadius: '6px', borderLeft: '4px solid #feb700', marginTop: '10px' }}>
+            <h4 style={{ margin: '0 0 6px 0', color: '#feb700', fontSize: '15px' }}>⚠️ Alergias y Contraindicaciones</h4>
+            <p style={{ margin: 0, color: '#e1e1e6', fontSize: '14px', lineHeight: '1.4' }}>{cliente.alergias}</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  );
 };
