@@ -1,6 +1,3 @@
-
-// src/types/index.ts
-
 export interface Usuario {
   id: string;
   nombre: string;
@@ -12,9 +9,10 @@ export interface Cliente {
   nombre: string;
   rut: string;
   telefono: string;
-  zonaPerforacion: string; 
+  edad?: number;              // Con el '?' evitamos errores si falta en algún lado
   alergias: string;
-  fechaRegistro: string;
+  zonaPerforacion?: string;   // Opcional para que no choque con el CRUD
+  fechaRegistro?: string;     // Opcional para que no choque con el CRUD
 }
 
 export interface Insumo {
