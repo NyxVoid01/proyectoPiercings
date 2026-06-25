@@ -13,21 +13,24 @@ export const Login: React.FC = () => {
   const [error, setError] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
+  e.preventDefault();
+  setError('');
 
-    if (!nombre.trim() || !password.trim()) {
-      setError('Por favor, completa todos los campos.');
-      return;
-    }
+  if (!nombre.trim() || !password.trim()) {
+    setError('Por favor, completa todos los campos.');
+    return;
+  }
 
-    // Simulación de autenticación exitosa para el entorno de desarrollo
-    // Tu AuthContext original guardará el nombre ingresado
-    login(nombre.trim(), 'administrador');
-    
-    // Redirigir al panel de control
-    navigate('/dashboard');
-  };
+  // 🌟 DETECTAR ROL AUTOMÁTICAMENTE
+  // Si escribe "admin", el rol será 'admin'. Si escribe otra cosa, será 'staff'
+  const rolDefinido = nombre.trim().toLowerCase() === 'admin' ? 'admin' : 'staff';
+
+  // Pasar el nombre y el rol dinámico
+  login(nombre.trim(), rolDefinido as any);
+
+  // Redirigir al panel de control
+  navigate('/dashboard');
+};
 
   return (
     <div style={{ 
