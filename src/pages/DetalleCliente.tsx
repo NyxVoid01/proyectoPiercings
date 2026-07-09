@@ -2,19 +2,42 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import type { Cliente } from '../types/index';
+// Conectamos a Firestore dinámico
+import { db } from '../../firebase';
+import { doc, onSnapshot } from 'firebase/firestore';
 
 export const DetalleCliente: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [cliente, setCliente] = useState<Cliente | null>(null);
+  const [cargando, setCargando] = useState(true);
 
   useEffect(() => {
-    const guardados = localStorage.getItem('ink_needle_clientes_crud');
-    if (guardados) {
-      const lista: Cliente[] = JSON.parse(guardados);
-      const encontrado = lista.find(c => c.id === id);
-      setCliente(encontrado || null);
-    }
+    if (!id) return;
+
+    // Escucha en tiempo real la ficha de este cliente en específico desde la nube
+    const docRef = doc(db, 'clientes', id);
+    const desuscribir = onSnapshot(docRef, (docSnap) => {
+      if (docSnap.exists()) {
+        setCliente({ id: docSnap.id, ...docSnap.data() } as Cliente);
+      } else {
+        setCliente(null);
+      }
+      setCargando(false);
+    }, (error) => {
+      console.error("Error al traer detalle desde Firestore:", error);
+      setCargando(false);
+    });
+
+    return () => desuscribir();
   }, [id]);
+
+  if (cargando) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', backgroundColor: '#121214', color: '#e50914', fontFamily: 'sans-serif' }}>
+        <span>Cargando historial clínico...</span>
+      </div>
+    );
+  }
 
   if (!cliente) {
     return (
@@ -28,7 +51,7 @@ export const DetalleCliente: React.FC = () => {
   return (
     <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#121214', color: '#e1e1e6', fontFamily: 'sans-serif' }}>
       
-      {/* SIDEBAR */}
+      {/* SIDEBAR UNIFICADO CORREGIDO */}
       <div style={{ width: '260px', backgroundColor: '#1a1a1e', borderRight: '1px solid #29292e', padding: '20px' }}>
         <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#ffffff', textAlign: 'center', marginBottom: '40px' }}>
           INK & <span style={{ color: '#e50914' }}>NEEDLE</span>
@@ -37,7 +60,7 @@ export const DetalleCliente: React.FC = () => {
           <Link to="/dashboard" style={{ padding: '12px 15px', color: '#a8a8b3', textDecoration: 'none' }}>Panel Principal</Link>
           <Link to="/citas" style={{ padding: '12px 15px', color: '#a8a8b3', textDecoration: 'none' }}>📅 Agenda de Citas</Link>
           <Link to="/clientes" style={{ padding: '12px 15px', color: '#fff', backgroundColor: '#29292e', textDecoration: 'none', borderRadius: '6px', borderLeft: '4px solid #e50914', fontWeight: 'bold' }}>👥 Fichas Clínicas</Link>
-          <Link to="/servicios" style={{ padding: '12px 15px', color: '#a8a8b3', textDecoration: 'none' }}>💎 Servicios</Link>
+          <Link to="/servicios" style={{ padding: '12px 15px', color: '#a8a8b3', textDecoration: 'none' }}>💎 Catálogo e Inventario</Link>
         </nav>
       </div>
 
