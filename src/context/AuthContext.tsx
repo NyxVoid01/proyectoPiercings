@@ -1,57 +1,64 @@
-
 // src/context/AuthContext.tsx
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { type Usuario } from '../types/index';
 
-// 1. Definimos qué datos y funciones compartirá el contexto con toda la app
+// ¡OJO AQUÍ! Asegúrate de que tenga los dos puntos y la diagonal: ../firebase
+import { auth } from '../../firebase';
+import { onAuthStateChanged } from 'firebase/auth';
+
+// Definimos qué datos y funciones compartirá el contexto con toda la app
 interface AuthContextType {
   usuario: Usuario | null;
-  login: (nombre: string, rol: 'administrador' | 'perforador') => void;
-  logout: () => void;
   cargando: boolean;
+  logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// 2. Componente Proveedor que envolverá a la aplicación
+// Componente Proveedor que envolverá a la aplicación
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [usuario, setUsuario] = useState<Usuario | null>(null);
   const [cargando, setCargando] = useState(true);
 
-  // Al cargar la app, verificamos si ya había una sesión iniciada en localStorage
+  // 2. Escuchamos en tiempo real si el usuario está logueado en Firebase
   useEffect(() => {
-    const usuarioGuardado = localStorage.getItem('ink_needle_sesion');
-    if (usuarioGuardado) {
-      setUsuario(JSON.parse(usuarioGuardado));
-    }
-    setCargando(false);
+    const desuscribir = onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser) {
+        // Si Firebase encuentra una sesión activa, estructuramos nuestro objeto Usuario
+        // Nota: Como por ahora el Login de Firebase solo da email, asignamos un rol por defecto
+        setUsuario({
+          id: firebaseUser.uid,
+          nombre: firebaseUser.email || 'Usuario',
+          rol: firebaseUser.email === 'admin@piercings.com' ? 'administrador' : 'perforador'
+        });
+      } else {
+        // Si no hay sesión, el usuario es null
+        setUsuario(null);
+      }
+      setCargando(false);
+    });
+
+    // Limpiamos el observador cuando el componente se desmonte
+    return () => desuscribir();
   }, []);
 
-  // Función para iniciar sesión (Guarda en estado y en localStorage)
-  const login = (nombre: string, rol: 'administrador' | 'perforador') => {
-    const nuevoUsuario: Usuario = {
-      id: crypto.randomUUID(),
-      nombre,
-      rol
-    };
-    setUsuario(nuevoUsuario);
-    localStorage.setItem('ink_needle_sesion', JSON.stringify(nuevoUsuario));
-  };
-
-  // Función para cerrar sesión (Limpia el estado y el localStorage)
-  const logout = () => {
-    setUsuario(null);
-    localStorage.removeItem('ink_needle_sesion');
+  // 3. Función para cerrar sesión usando Firebase Auth
+  const logout = async () => {
+    try {
+      await auth.signOut();
+    } catch (error) {
+      console.error("Error al cerrar sesión:", error);
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ usuario, login, logout, cargando }}>
+    <AuthContext.Provider value={{ usuario, logout, cargando }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
-// 3. Hook personalizado para consumir el contexto fácilmente en las páginas
+// Hook personalizado para consumir el contexto fácilmente en las páginas
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
