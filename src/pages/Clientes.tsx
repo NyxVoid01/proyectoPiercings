@@ -1,7 +1,12 @@
+// src/pages/Clientes.tsx
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import type { Cliente } from '../types/index'; // 👈 Agregamos "type" aquí
+import type { Cliente } from '../types/index';
+// 1. Herramientas de Firestore y base de datos
+import { db } from '../../firebase';
+import { collection, addDoc, deleteDoc, doc, onSnapshot, query } from 'firebase/firestore';
+
 export const Clientes: React.FC = () => {
   const { usuario } = useAuth();
   const [clientes, setClientes] = useState<Cliente[]>([]);
@@ -17,54 +22,64 @@ export const Clientes: React.FC = () => {
   const nombreMinuscula = usuario?.nombre?.toLowerCase() || '';
   const esAdmin = nombreMinuscula === 'fernando' || nombreMinuscula === 'angel';
 
+  // 2. Escuchar la colección de clientes en tiempo real desde Firestore
   useEffect(() => {
-    const guardados = localStorage.getItem('ink_needle_clientes_crud');
-    if (guardados) {
-      setClientes(JSON.parse(guardados));
-    } else {
-      const iniciales: Cliente[] = [
-        { id: '1', nombre: 'Bastian Portilla', rut: '19.876.543-2', telefono: '+56922387381', edad: 24, alergias: 'Ninguna' },
-        { id: '2', nombre: 'Anahí Sanhueza', rut: '21.456.789-0', telefono: '+56987654321', edad: 21, alergias: 'Alergia a la penicilina y látex' }
-      ];
-      setClientes(iniciales);
-      localStorage.setItem('ink_needle_clientes_crud', JSON.stringify(iniciales));
-    }
+    const q = query(collection(db, 'clientes'));
+    
+    const desuscribir = onSnapshot(q, (snapshot) => {
+      const listaClientes = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Cliente[];
+      
+      setClientes(listaClientes);
+    }, (error) => {
+      console.error("Error al traer clientes de Firestore:", error);
+    });
+
+    return () => desuscribir();
   }, []);
 
-  const handleCrearCliente = (e: React.FormEvent) => {
+  // 3. Guardar cliente en Firestore
+  const handleCrearCliente = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!nombre.trim() || !rut.trim() || !edad.trim() || !alergias.trim()) {
       alert('Por favor complete los campos obligatorios (Nombre, RUT, Edad, Alergias).');
       return;
     }
 
-    const nuevoCliente: Cliente = {
-      id: crypto.randomUUID(),
-      nombre,
-      rut,
-      telefono: telefono || 'No registra',
-      edad: Number(edad),
-      alergias
-    };
+    try {
+      await addDoc(collection(db, 'clientes'), {
+        nombre: nombre.trim(),
+        rut: rut.trim(),
+        telefono: telefono.trim() || 'No registra',
+        edad: Number(edad),
+        alergias: alergias.trim(),
+        fechaRegistro: new Date()
+      });
 
-    const actualizados = [...clientes, nuevoCliente];
-    setClientes(actualizados);
-    localStorage.setItem('ink_needle_clientes_crud', JSON.stringify(actualizados));
-
-    // Limpiar formulario
-    setNombre('');
-    setRut('');
-    setTelefono('');
-    setEdad('');
-    setAlergias('');
+      // Limpiar formulario
+      setNombre('');
+      setRut('');
+      setTelefono('');
+      setEdad('');
+      setAlergias('');
+    } catch (error) {
+      console.error("Error al guardar la ficha clínica: ", error);
+      alert("No se pudo guardar la ficha en la base de datos.");
+    }
   };
 
-  const handleEliminarCliente = (id: string) => {
+  // 4. Eliminar cliente de Firestore (Solo Admin)
+  const handleEliminarCliente = async (id: string) => {
     if (!esAdmin) return;
-    if (window.confirm('¿Está seguro de eliminar esta ficha clínica de forma permanente?')) {
-      const filtrados = clientes.filter(c => c.id !== id);
-      setClientes(filtrados);
-      localStorage.setItem('ink_needle_clientes_crud', JSON.stringify(filtrados));
+    if (window.confirm('¿Está seguro de eliminar esta ficha clínica de forma permanente de la base de datos?')) {
+      try {
+        await deleteDoc(doc(db, 'clientes', id));
+      } catch (error) {
+        console.error("Error al eliminar la ficha clínica: ", error);
+        alert("Hubo un problema al intentar eliminar.");
+      }
     }
   };
 
@@ -118,28 +133,34 @@ export const Clientes: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {clientes.map(c => (
-                <tr key={c.id} style={{ borderBottom: '1px solid #202024' }}>
-                  <td style={{ padding: '14px 0', color: '#fff' }}><strong>{c.nombre}</strong><br/><small style={{ color: '#7c7c8a' }}>{c.rut}</small></td>
-                  <td style={{ padding: '14px 0', color: '#c4c4cc' }}>{c.telefono || 'No registra'}</td>
-                  <td style={{ padding: '14px 0', color: '#c4c4cc' }}>{c.edad} años</td>
-                  <td style={{ padding: '14px 0', color: '#feb700' }}>⚠️ {c.alergias}</td>
-                  <td style={{ padding: '14px 0' }}>
-                    <Link to={`/clientes/${c.id}`} style={{ color: '#e50914', textDecoration: 'none', fontWeight: 'bold' }}>
-                      👁️ Ver Ficha
-                    </Link>
-                  </td>
-                  <td style={{ padding: '14px 0' }}>
-                    {esAdmin ? (
-                      <button onClick={() => handleEliminarCliente(c.id)} style={{ backgroundColor: 'transparent', color: '#e50914', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}>
-                        Eliminar
-                      </button>
-                    ) : (
-                      <span style={{ color: '#50505a', fontSize: '13px' }}>🔒 Bloqueado</span>
-                    )}
-                  </td>
+              {clientes.length === 0 ? (
+                <tr>
+                  <td colSpan={6} style={{ padding: '20px 0', color: '#7c7c8a', textAlign: 'center' }}>No hay fichas clínicas guardadas en la base de datos.</td>
                 </tr>
-              ))}
+              ) : (
+                clientes.map(c => (
+                  <tr key={c.id} style={{ borderBottom: '1px solid #202024' }}>
+                    <td style={{ padding: '14px 0', color: '#fff' }}><strong>{c.nombre}</strong><br/><small style={{ color: '#7c7c8a' }}>{c.rut}</small></td>
+                    <td style={{ padding: '14px 0', color: '#c4c4cc' }}>{c.telefono || 'No registra'}</td>
+                    <td style={{ padding: '14px 0', color: '#c4c4cc' }}>{c.edad} años</td>
+                    <td style={{ padding: '14px 0', color: '#feb700' }}>⚠️ {c.alergias}</td>
+                    <td style={{ padding: '14px 0' }}>
+                      <Link to={`/clientes/${c.id}`} style={{ color: '#e50914', textDecoration: 'none', fontWeight: 'bold' }}>
+                        👁️ Ver Ficha
+                      </Link>
+                    </td>
+                    <td style={{ padding: '14px 0' }}>
+                      {esAdmin ? (
+                        <button onClick={() => handleEliminarCliente(c.id)} style={{ backgroundColor: 'transparent', color: '#e50914', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}>
+                          Eliminar
+                        </button>
+                      ) : (
+                        <span style={{ color: '#50505a', fontSize: '13px' }}>🔒 Bloqueado</span>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
