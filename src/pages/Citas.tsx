@@ -1,8 +1,9 @@
-
 // src/pages/Citas.tsx
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+// 1. Importamos la base de datos de tu archivo de configuración y las herramientas de Firestore
+import { db } from '../../firebase';
+import { collection, addDoc, deleteDoc, doc, onSnapshot, query} from 'firebase/firestore';
 
 interface Cita {
   id: string;
@@ -16,7 +17,6 @@ interface Cita {
 }
 
 export const Citas: React.FC = () => {
-  const { usuario } = useAuth();
   const [citas, setCitas] = useState<Cita[]>([]);
 
   const [cliente, setCliente] = useState('');
@@ -27,45 +27,66 @@ export const Citas: React.FC = () => {
   const [tipoPerforacion, setTipoPerforacion] = useState('');
   const [consentimiento, setConsentimiento] = useState(false);
 
+  // 2. Escuchar la base de datos en tiempo real
   useEffect(() => {
-    const guardadas = localStorage.getItem('ink_needle_citas_crud');
-    if (guardadas) {
-      setCitas(JSON.parse(guardadas));
-    }
+    // Apuntamos a la colección "citas"
+    const q = query(collection(db, 'citas'));
+    
+    const desuscribir = onSnapshot(q, (snapshot) => {
+      const listaCitas = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Cita[];
+      
+      setCitas(listaCitas);
+    }, (error) => {
+      console.error("Error al obtener las citas de Firestore:", error);
+    });
+
+    // Limpiamos la conexión cuando salgas de la página
+    return () => desuscribir();
   }, []);
 
-  const handleCrearCita = (e: React.FormEvent) => {
+  // 3. Crear una cita en Firestore
+  const handleCrearCita = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!cliente || !fecha || !hora || !tipoPerforacion) return;
 
-    const nuevaCita: Cita = {
-      id: crypto.randomUUID(),
-      cliente,
-      numeroContacto,
-      fecha,
-      hora,
-      personaEncargada,
-      tipoPerforacion,
-      consentimiento
-    };
+    try {
+      // Guardamos directamente en la nube
+      await addDoc(collection(db, 'citas'), {
+        cliente,
+        numeroContacto,
+        fecha,
+        hora,
+        personaEncargada,
+        tipoPerforacion,
+        consentimiento,
+        fechaRegistro: new Date() // Opcional, para llevar un control interno
+      });
 
-    const listaActualizada = [...citas, nuevaCita];
-    setCitas(listaActualizada);
-    localStorage.setItem('ink_needle_citas_crud', JSON.stringify(listaActualizada));
-
-    setCliente('');
-    setNumeroContacto('');
-    setFecha('');
-    setHora('');
-    setTipoPerforacion('');
-    setConsentimiento(false);
+      // Limpiamos los campos del formulario
+      setCliente('');
+      setNumeroContacto('');
+      setFecha('');
+      setHora('');
+      setTipoPerforacion('');
+      setConsentimiento(false);
+    } catch (error) {
+      console.error("Error al guardar la cita en Firestore: ", error);
+      alert("Hubo un problema al agendar la cita.");
+    }
   };
 
-  const handleEliminarCita = (id: string) => {
-    if (window.confirm('¿Eliminar cita?')) {
-      const filtradas = citas.filter(c => c.id !== id);
-      setCitas(filtradas);
-      localStorage.setItem('ink_needle_citas_crud', JSON.stringify(filtradas));
+  // 4. Eliminar una cita de Firestore usando su ID
+  const handleEliminarCita = async (id: string) => {
+    if (window.confirm('¿Seguro que quieres eliminar esta cita de la base de datos?')) {
+      try {
+        await deleteDoc(doc(db, 'citas', id));
+      } catch (error) {
+        console.error("Error al eliminar la cita: ", error);
+        alert("No se pudo eliminar la cita.");
+      }
     }
   };
 
@@ -80,7 +101,8 @@ export const Citas: React.FC = () => {
           <Link to="/dashboard" style={{ padding: '12px 15px', color: '#a8a8b3', textDecoration: 'none' }}>Panel Principal</Link>
           <Link to="/citas" style={{ padding: '12px 15px', color: '#fff', backgroundColor: '#29292e', textDecoration: 'none', borderRadius: '6px', borderLeft: '4px solid #e50914' }}>📅 Agenda de Citas</Link>
           <Link to="/clientes" style={{ padding: '12px 15px', color: '#a8a8b3', textDecoration: 'none' }}>👥 Fichas Clínicas</Link>
-          <Link to="/inventario" style={{ padding: '12px 15px', color: '#a8a8b3', textDecoration: 'none' }}>📦 Catálogo e Inventario</Link>
+          {/* Corregido para que apunte al catálogo unificado en lugar de /inventario */}
+          <Link to="/servicios" style={{ padding: '12px 15px', color: '#a8a8b3', textDecoration: 'none' }}>💎 Servicios</Link>
         </nav>
       </div>
 
@@ -120,18 +142,24 @@ export const Citas: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {citas.map(c => (
-                <tr key={c.id} style={{ borderBottom: '1px solid #202024' }}>
-                  <td style={{ padding: '12px 0', color: '#fff' }}>{c.cliente}</td>
-                  <td style={{ padding: '12px 0', color: '#c4c4cc' }}>{c.tipoPerforacion}</td>
-                  <td style={{ padding: '12px 0', color: '#c4c4cc' }}>{c.fecha} - {c.hora}</td>
-                  <td style={{ padding: '12px 0' }}>
-                    <button onClick={() => handleEliminarCita(c.id)} style={{ backgroundColor: 'transparent', color: '#e50914', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}>
-                      Eliminar
-                    </button>
-                  </td>
+              {citas.length === 0 ? (
+                <tr>
+                  <td colSpan={4} style={{ padding: '20px 0', color: '#7c7c8a', textAlign: 'center' }}>No hay citas agendadas en la base de datos.</td>
                 </tr>
-              ))}
+              ) : (
+                citas.map(c => (
+                  <tr key={c.id} style={{ borderBottom: '1px solid #202024' }}>
+                    <td style={{ padding: '12px 0', color: '#fff' }}>{c.cliente}</td>
+                    <td style={{ padding: '12px 0', color: '#c4c4cc' }}>{c.tipoPerforacion}</td>
+                    <td style={{ padding: '12px 0', color: '#c4c4cc' }}>{c.fecha} - {c.hora}</td>
+                    <td style={{ padding: '12px 0' }}>
+                      <button onClick={() => handleEliminarCita(c.id)} style={{ backgroundColor: 'transparent', color: '#e50914', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}>
+                        Eliminar
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
