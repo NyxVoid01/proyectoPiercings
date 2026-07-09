@@ -1,3 +1,4 @@
+// src/App.tsx
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 // Importamos tanto el AuthProvider como el useAuth desde tu contexto
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -8,7 +9,7 @@ import { DetalleCliente } from './pages/DetalleCliente';
 import { Citas } from './pages/Citas';
 import { Servicios } from './pages/Servicios';
 
-// Creamos un componente interno para no mezclar el proveedor con la lógica
+// Componente interno con la lógica de enrutamiento y protección de accesos
 function AppRoutes() {
   const { usuario, cargando } = useAuth();
 
@@ -31,21 +32,26 @@ function AppRoutes() {
   return (
     <Router>
       <Routes>
+        {/* Control de autenticación para el Login */}
         <Route path="/login" element={!usuario ? <Login /> : <Navigate to="/dashboard" />} />
         
+        {/* Catálogo Unificado e Inventario conectado a la Base de Datos Real de Firestore */}
+        <Route path="/servicios" element={usuario ? <Servicios /> : <Navigate to="/login" />} />
+        
+        {/* Rutas del Panel de Administración y Control */}
         <Route path="/dashboard" element={usuario ? <Dashboard /> : <Navigate to="/login" />} />
         <Route path="/clientes" element={usuario ? <Clientes /> : <Navigate to="/login" />} />
         <Route path="/clientes/:id" element={usuario ? <DetalleCliente /> : <Navigate to="/login" />} />
         <Route path="/citas" element={usuario ? <Citas /> : <Navigate to="/login" />} />
-        <Route path="/servicios" element={usuario ? <Servicios /> : <Navigate to="/login" />} />
 
+        {/* Redirección por defecto si la ruta no existe */}
         <Route path="*" element={<Navigate to="/login" />} />
       </Routes>
     </Router>
   );
 }
 
-// El componente App principal ahora envuelve de forma segura toda la estructura con el AuthProvider
+// Componente principal de la aplicación que envuelve todo con el proveedor de sesión
 function App() {
   return (
     <AuthProvider>
