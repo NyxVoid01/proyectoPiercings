@@ -1,6 +1,10 @@
+// src/pages/Servicios.tsx
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+// 1. Herramientas de Firestore y base de datos
+import { db } from '../../firebase';
+import { collection, addDoc, deleteDoc, doc, onSnapshot, query } from 'firebase/firestore';
 
 interface Servicio {
   id: string;
@@ -29,59 +33,70 @@ export const Servicios: React.FC = () => {
   const nombreMinuscula = usuario?.nombre?.toLowerCase() || '';
   const esAdmin = nombreMinuscula === 'fernando' || nombreMinuscula === 'angel';
 
+  // 2. Escuchar la colección de servicios en tiempo real desde Firestore
   useEffect(() => {
-    const guardados = localStorage.getItem('ink_needle_servicios_crud');
-    if (guardados) {
-      setServicios(JSON.parse(guardados));
-    } else {
-      const iniciales: Servicio[] = [
-        { id: '1', tipoServicio: 'Perforación Helix', zona: 'Oreja (Cartílago)', precio: 25000, accesorio: 'Aro Titanio Labret', descuento: 0, stockInsumo: 45 },
-        { id: '2', tipoServicio: 'Perforación Nostril', zona: 'Nariz', precio: 22000, accesorio: 'Nostril de Neobio', descuento: 2000, stockInsumo: 12 }
-      ];
-      setServicios(iniciales);
-      localStorage.setItem('ink_needle_servicios_crud', JSON.stringify(iniciales));
-    }
+    const q = query(collection(db, 'servicios'));
+    
+    const desuscribir = onSnapshot(q, (snapshot) => {
+      const listaServicios = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Servicio[];
+      
+      setServicios(listaServicios);
+    }, (err) => {
+      console.error("Error al traer los servicios de Firestore:", err);
+    });
+
+    return () => desuscribir();
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // 3. Registrar un nuevo servicio en Firestore
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!tipoServicio.trim() || !zona.trim() || !precio.trim() || !accesorio.trim() || !stockInsumo.trim()) {
       setError('Todos los campos obligatorios deben ser completados.');
       return;
     }
 
-    const nuevo: Servicio = {
-      id: crypto.randomUUID(),
-      tipoServicio,
-      zona,
-      precio: Number(precio),
-      accesorio,
-      descuento: Number(descuento) || 0,
-      stockInsumo: Number(stockInsumo)
-    };
+    try {
+      await addDoc(collection(db, 'servicios'), {
+        tipoServicio: tipoServicio.trim(),
+        zona: zona.trim(),
+        precio: Number(precio),
+        accesorio: accesorio.trim(),
+        descuento: Number(descuento) || 0,
+        stockInsumo: Number(stockInsumo),
+        fechaRegistro: new Date()
+      });
 
-    const actualizados = [...servicios, nuevo];
-    setServicios(actualizados);
-    localStorage.setItem('ink_needle_servicios_crud', JSON.stringify(actualizados));
-
-    setTipoServicio('');
-    setZona('');
-    setPrecio('');
-    setAccesorio('');
-    setDescuento('0');
-    setStockInsumo('');
-    setError('');
+      // Limpiar formulario
+      setTipoServicio('');
+      setZona('');
+      setPrecio('');
+      setAccesorio('');
+      setDescuento('0');
+      setStockInsumo('');
+      setError('');
+    } catch (err) {
+      console.error("Error al registrar el servicio:", err);
+      setError('No se pudo guardar el servicio en la base de datos.');
+    }
   };
 
-  const handleEliminar = (id: string) => {
+  // 4. Eliminar un servicio de Firestore (Solo Admin)
+  const handleEliminar = async (id: string) => {
     if (!esAdmin) {
       alert('Error: No tienes permisos de Administrador.');
       return;
     }
-    if (window.confirm('¿Deseas eliminar este servicio?')) {
-      const filtrados = servicios.filter(s => s.id !== id);
-      setServicios(filtrados);
-      localStorage.setItem('ink_needle_servicios_crud', JSON.stringify(filtrados));
+    if (window.confirm('¿Deseas eliminar este servicio de la base de datos permanentemente?')) {
+      try {
+        await deleteDoc(doc(db, 'servicios', id));
+      } catch (err) {
+        console.error("Error al eliminar el servicio:", err);
+        alert("Hubo un problema al intentar eliminar.");
+      }
     }
   };
 
@@ -142,21 +157,27 @@ export const Servicios: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {serviciosFiltrados.map(s => (
-                <tr key={s.id} style={{ borderBottom: '1px solid #202024' }}>
-                  <td style={{ padding: '12px 0', color: '#fff' }}><strong>{s.tipoServicio}</strong></td>
-                  <td style={{ padding: '12px 0', color: '#c4c4cc' }}>{s.zona}</td>
-                  <td style={{ padding: '12px 0', color: '#fff' }}>${s.precio.toLocaleString('es-CL')}</td>
-                  <td style={{ padding: '12px 0', color: '#28a745' }}>{s.stockInsumo} uds</td>
-                  <td style={{ padding: '12px 0' }}>
-                    {esAdmin ? (
-                      <button onClick={() => handleEliminar(s.id)} style={{ backgroundColor: 'transparent', color: '#e50914', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}>Eliminar</button>
-                    ) : (
-                      <span style={{ color: '#50505a' }}>🔒 Bloqueado</span>
-                    )}
-                  </td>
+              {serviciosFiltrados.length === 0 ? (
+                <tr>
+                  <td colSpan={5} style={{ padding: '20px 0', color: '#7c7c8a', textAlign: 'center' }}>No se encontraron servicios registrados.</td>
                 </tr>
-              ))}
+              ) : (
+                serviciosFiltrados.map(s => (
+                  <tr key={s.id} style={{ borderBottom: '1px solid #202024' }}>
+                    <td style={{ padding: '12px 0', color: '#fff' }}><strong>{s.tipoServicio}</strong></td>
+                    <td style={{ padding: '12px 0', color: '#c4c4cc' }}>{s.zona}</td>
+                    <td style={{ padding: '12px 0', color: '#fff' }}>${s.precio.toLocaleString('es-CL')}</td>
+                    <td style={{ padding: '12px 0', color: '#28a745' }}>{s.stockInsumo} uds</td>
+                    <td style={{ padding: '12px 0' }}>
+                      {esAdmin ? (
+                        <button onClick={() => handleEliminar(s.id)} style={{ backgroundColor: 'transparent', color: '#e50914', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}>Eliminar</button>
+                      ) : (
+                        <span style={{ color: '#50505a' }}>🔒 Bloqueado</span>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
