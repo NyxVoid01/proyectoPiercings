@@ -2,11 +2,9 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { type Usuario } from '../types/index';
 
-// ¡OJO AQUÍ! Asegúrate de que tenga los dos puntos y la diagonal: ../firebase
 import { auth } from '../../firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 
-// Definimos qué datos y funciones compartirá el contexto con toda la app
 interface AuthContextType {
   usuario: Usuario | null;
   cargando: boolean;
@@ -15,34 +13,27 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Componente Proveedor que envolverá a la aplicación
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [usuario, setUsuario] = useState<Usuario | null>(null);
   const [cargando, setCargando] = useState(true);
 
-  // 2. Escuchamos en tiempo real si el usuario está logueado en Firebase
   useEffect(() => {
     const desuscribir = onAuthStateChanged(auth, (firebaseUser) => {
       if (firebaseUser) {
-        // Si Firebase encuentra una sesión activa, estructuramos nuestro objeto Usuario
-        // Nota: Como por ahora el Login de Firebase solo da email, asignamos un rol por defecto
         setUsuario({
           id: firebaseUser.uid,
           nombre: firebaseUser.email || 'Usuario',
           rol: firebaseUser.email === 'admin@piercings.com' ? 'administrador' : 'perforador'
         });
       } else {
-        // Si no hay sesión, el usuario es null
         setUsuario(null);
       }
-      setCargando(false);
+      setCargando(false); // Avisa a la app que Firebase ya terminó de revisar la sesión
     });
 
-    // Limpiamos el observador cuando el componente se desmonte
     return () => desuscribir();
   }, []);
 
-  // 3. Función para cerrar sesión usando Firebase Auth
   const logout = async () => {
     try {
       await auth.signOut();
@@ -58,7 +49,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   );
 };
 
-// Hook personalizado para consumir el contexto fácilmente en las páginas
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
